@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DropLaunch - Rust Map Testing Made Simple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-color: #1e2028; /* main back color */
+            color: #b2b7bf; /* white text */
+        }
+        .bg-dark-panel {
+            background-color: #1c1b1f; /* darker panels */
+        }
+        .accent-blue {
+            color: #7a95e3; /* blue main accent */
+        }
+        .bg-accent-blue {
+            background-color: #7a95e3;
+        }
+        .btn {
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .feature-card {
+            background-color: #2a2c35;
+            border-left: 4px solid #7a95e3;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        /* Colored Brand Icons */
+        .fa-github { color: #ffffff; } /* White for GitHub */
+        .fa-discord { color: #5865F2; } /* Discord Blue */
+        .fa-youtube { color: #FF0000; } /* YouTube Red */
+        
+        /* Screenshot Gallery Styles */
+        .screenshot-gallery {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 1rem;
+        }
+        .screenshot-gallery::-webkit-scrollbar { height: 8px; }
+        .screenshot-gallery::-webkit-scrollbar-track { background: #2a2c35; border-radius: 4px; }
+        .screenshot-gallery::-webkit-scrollbar-thumb { background-color: #7a95e3; border-radius: 4px; }
+        .screenshot-gallery img {
+            flex-shrink: 0;
+            height: 280px;
+            width: auto;
+            object-fit: cover;
+        }
+
+        /* Lightbox styles */
+        .lightbox { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); justify-content: center; align-items: center; }
+        .lightbox-content { max-width: 90%; max-height: 80%; }
+        .lightbox-close, .lightbox-prev, .lightbox-next { position: absolute; color: white; font-size: 2rem; cursor: pointer; user-select: none; }
+        .lightbox-close { top: 20px; right: 30px; }
+        .lightbox-prev, .lightbox-next { top: 50%; transform: translateY(-50%); }
+        .lightbox-prev { left: 20px; }
+        .lightbox-next { right: 20px; }
+
+        /* Ad Placeholder Style */
+        .ad-placeholder {
+            background-color: #2a2c35;
+            border: 2px dashed #4a4d58;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #6b7280;
+            font-weight: 600;
+            min-height: 600px;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <nav class="bg-dark-panel p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="index.html" class="flex items-center">
+                <img src="https://i.imgur.com/cPg1ocQ.png" alt="DropLaunch Logo" class="h-8 w-8 mr-2">
+                <h1 class="text-2xl font-bold accent-blue">DropLaunch</h1>
+            </a>
+            <div>
+                <a href="generator.html" class="text-lg hover:text-white px-3 py-2 rounded">
+                    <i class="fas fa-file-code mr-1" style="color: #f39c12;"></i> Generator
+                </a>
+                <a href="https://github.com/tedpommes/Rust-DropLaunch" target="_blank" class="text-lg hover:text-white px-3 py-2 rounded"><i class="fab fa-github"></i> GitHub</a>
+                <a href="https://discord.gg/hbXD2YArdV" target="_blank" class="text-lg hover:text-white px-3 py-2 rounded"><i class="fab fa-discord"></i> Discord</a>
+                <a href="https://github.com/tedpommes/Rust-DropLaunch/releases" target="_blank" class="bg-accent-blue text-white font-bold py-2 px-4 rounded-full text-md btn"><i class="fas fa-download mr-2"></i>Download</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex justify-center">
+        <aside class="hidden lg:block w-1/6 p-4">
+            <div class="ad-placeholder rounded-lg">
+                <p>Advertisement</p>
+            </div>
+        </aside>
+
+        <main class="w-full lg:w-4/6">
+            <header class="py-20 text-center">
+                <div class="container mx-auto">
+                    <h2 class="text-5xl font-extrabold text-white">Rust Map Testing, Simplified.</h2>
+                    <p class="text-xl mt-4 max-w-2xl mx-auto">A beginner-friendly, open source utility that makes local Rust map testing fast, clean, and frustration-free.</p>
+                    <div class="mt-8">
+                        <a href="https://github.com/tedpommes/Rust-DropLaunch/releases" target="_blank" class="bg-accent-blue text-white font-bold py-3 px-8 rounded-full text-lg btn"><i class="fas fa-download mr-2"></i>Download Latest Version</a>
+                    </div>
+                </div>
+            </header>
+
+            <section id="features" class="py-20 bg-dark-panel">
+                <div class="container mx-auto px-6">
+                    <h3 class="text-4xl font-bold text-center text-white mb-12">Key Features</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-cogs mr-2" style="color: #f39c12;"></i>One-Click Server Setup</h4><p>Automatically installs SteamCMD and configures a local Rust server for testing.</p></div>
+                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-mouse-pointer mr-2" style="color: #e74c3c;"></i>Drag & Drop Loading</h4><p>Just drop your .map file into the app, and it does the rest—even if the app is not running.</p></div>
+                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-sync-alt mr-2" style="color: #3498db;"></i>Real-Time Map Monitoring</h4><p>Detects map file changes instantly and updates the map list to ensure accurate data.</p></div>
+                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-bell mr-2" style="color: #f1c40f;"></i>Desktop Notifications</h4><p>Get notified when maps are saved and start a server with the newest map version by clicking the notification.</p></div>
+                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-history mr-2" style="color: #9b59b6;"></i>Map History Tracking</h4><p>View and relaunch maps you've previously tested, no digging needed.</p></div>
+                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-broom mr-2" style="color: #2ecc71;"></i>Client Map Cleanup</h4><p>Delete cached maps and ensure a fresh environment with one click. No file mismatch errors.</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="screenshots" class="py-20">
+                <div class="container mx-auto px-6">
+                    <h3 class="text-4xl font-bold text-center text-white mb-12">Screenshots</h3>
+                    <div class="screenshot-gallery gap-4">
+                        <img src="https://i.imgur.com/C7SMrze.png" alt="Screenshot 1" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(0)">
+                        <img src="https://i.imgur.com/zrMcqGw.png" alt="Screenshot 2" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(1)">
+                        <img src="https://i.imgur.com/3v4zlbn.png" alt="Screenshot 3" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(2)">
+                        <img src="https://i.imgur.com/J2MSQqx.png" alt="Screenshot 4" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(3)">
+                        <img src="https://i.imgur.com/OlSrFwa.png" alt="Screenshot 5" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(4)">
+                        <img src="https://i.imgur.com/HAbXP02.png" alt="Screenshot 6" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(5)">
+                        <img src="https://i.imgur.com/OlSrFwa.png" alt="Screenshot 7" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(6)">
+                        <img src="https://i.imgur.com/lh8jCeo.png" alt="Screenshot 8" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(7)">
+                        <img src="https://i.imgur.com/NgNpKMR.png" alt="Screenshot 9" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(8)">
+                        <img src="https://i.imgur.com/GJdiv4b.png" alt="Screenshot 10" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(9)">
+                    </div>
+                </div>
+            </section>
+
+            <section id="tutorials" class="py-20 bg-dark-panel">
+                <div class="container mx-auto px-6">
+                    <h3 class="text-4xl font-bold text-center text-white mb-12">Video Tutorials</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-dark-panel p-6 rounded-lg shadow-lg"><h4 class="text-2xl font-bold accent-blue mb-4 text-center"><i class="fab fa-youtube mr-2"></i>Quick Start Guide</h4><div class="aspect-video w-full rounded-lg overflow-hidden"><iframe src="https://www.youtube.com/embed/072XwfL8YqY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe></div><p class="text-center mt-4">A fast-paced guide to get you up and running with DropLaunch in minutes.</p></div>
+                        <div class="bg-dark-panel p-6 rounded-lg shadow-lg"><h4 class="text-2xl font-bold accent-blue mb-4 text-center"><i class="fab fa-youtube mr-2"></i>Full Walkthrough</h4><div class="aspect-video w-full rounded-lg overflow-hidden"><iframe src="https://www.youtube.com/embed/your_video_id_here" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe></div><p class="text-center mt-4">A comprehensive look at all of DropLaunch's features and how to utilize them.</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="download" class="py-20">
+                <div class="container mx-auto text-center">
+                    <h3 class="text-4xl font-bold text-white mb-4">Get Started with DropLaunch</h3>
+                    <div class="flex flex-wrap justify-center items-center gap-4">
+                        <a href="https://github.com/tedpommes/Rust-DropLaunch/releases" target="_blank" class="bg-accent-blue text-white font-bold py-3 px-6 rounded-full text-lg btn"><i class="fas fa-download mr-2"></i>Download Latest</a>
+                        <a href="https://github.com/tedpommes/Rust-DropLaunch" target="_blank" class="border-2 border-accent-blue text-white font-bold py-3 px-6 rounded-full text-lg btn"><i class="fab fa-github mr-2"></i>View on GitHub</a>
+                        <a href="https://discord.gg/hbXD2YArdV" target="_blank" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full text-lg btn"><i class="fab fa-discord mr-2"></i>Join our Discord</a>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="bg-dark-panel py-6 text-center">
+                <p>© 2025 DropLaunch. All Rights Reserved.</p>
+            </footer>
+        </main>
+        
+        <aside class="hidden lg:block w-1/6 p-4">
+            <div class="ad-placeholder rounded-lg">
+                <p>Advertisement</p>
+            </div>
+        </aside>
+    </div>
+
+    <div id="lightbox" class="lightbox" onclick="closeLightboxOnClick(event)">
+        <span class="lightbox-close" onclick="closeLightbox()">×</span>
+        <span class="lightbox-prev" onclick="changeImage(-1)">❮</span>
+        <img class="lightbox-content" id="lightbox-img">
+        <span class="lightbox-next" onclick="changeImage(1)">❯</span>
+    </div>
+
+<script>
+    const galleryImages = document.querySelectorAll('.screenshot-gallery img');
+    const images = Array.from(galleryImages).map(img => img.src);
+    let currentIndex = 0;
+
+    function openLightbox(index) {
+        currentIndex = index;
+        document.getElementById('lightbox-img').src = images[currentIndex];
+        document.getElementById('lightbox').style.display = 'flex';
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+    }
+    
+    function closeLightboxOnClick(event) {
+        if (event.target.id === 'lightbox') {
+            closeLightbox();
+        }
+    }
+
+    function changeImage(step) {
+        currentIndex += step;
+        if (currentIndex >= images.length) {
+            currentIndex = 0;
+        }
+        if (currentIndex < 0) {
+            currentIndex = images.length - 1;
+        }
+        document.getElementById('lightbox-img').src = images[currentIndex];
+    }
+</script>
+
+</body>
+</html>
