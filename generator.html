@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Server Script Generator - DropLaunch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body{background-color:#1e2028;color:#b2b7bf}.bg-dark-panel{background-color:#1c1b1f}.accent-blue{color:#7a95e3}.bg-accent-blue{background-color:#7a95e3}.btn{transition:all .3s ease}.btn:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.2)}.fa-github{color:#fff}.fa-discord{color:#5865F2}.form-input{background-color:#2a2c35;border:1px solid #4a4d58;color:#b2b7bf;transition:border-color .3s ease,box-shadow .3s ease}.form-input:focus{outline:none;border-color:#7a95e3;box-shadow:0 0 0 3px rgba(122,149,227,.2)}
+        .output-area{background-color:#16181d;border:1px solid #4a4d58;color:#d1d5db;font-family:monospace;white-space:pre;overflow-x:auto;}.output-area:focus{outline:none;border-color:#7a95e3;box-shadow:0 0 0 1px #7a95e3}
+        .output-area.word-wrap-enabled{white-space:pre-wrap;word-break:break-all;overflow-x:hidden;}
+        .tab-btn{padding:0.75rem 1.5rem;border:2px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;font-weight:600;color:#888e9a;cursor:pointer;transition:all .3s ease}.tab-btn.active-tab{color:#fff;background-color:#1c1b1f;border-color:#4a4d58}
+        input[type=range]{-webkit-appearance:none;background:transparent;width:100%}input[type=range]:focus{outline:none}input[type=range]::-webkit-slider-runnable-track{height:8px;cursor:pointer;background:#2a2c35;border-radius:5px}input[type=range]::-webkit-slider-thumb{height:18px;width:18px;border-radius:50%;background:#7a95e3;cursor:pointer;-webkit-appearance:none;margin-top:-5px}input[type=range]::-moz-range-track{height:8px;cursor:pointer;background:#2a2c35;border-radius:5px}input[type=range]::-moz-range-thumb{height:18px;width:18px;border-radius:50%;background:#7a95e3;cursor:pointer}
+        .ad-placeholder{background-color:#2a2c35;border:2px dashed #4a4d58;display:flex;align-items:center;justify-content:center;text-align:center;color:#6b7280;font-weight:600;min-height:600px;}
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <nav class="bg-dark-panel p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="index.html" class="flex items-center">
+                <img src="https://i.imgur.com/cPg1ocQ.png" alt="DropLaunch Logo" class="h-8 w-8 mr-2">
+                <h1 class="text-2xl font-bold accent-blue">DropLaunch</h1>
+            </a>
+            <div>
+                 <a href="index.html" class="text-lg hover:text-white px-3 py-2 rounded">
+                    <i class="fas fa-home mr-1" style="color: #f39c12;"></i> Home
+                </a>
+                <a href="https://github.com/tedpommes/Rust-DropLaunch" target="_blank" class="text-lg hover:text-white px-3 py-2 rounded"><i class="fab fa-github"></i> GitHub</a>
+                <a href="https://discord.gg/hbXD2YArdV" target="_blank" class="text-lg hover:text-white px-3 py-2 rounded"><i class="fab fa-discord"></i> Discord</a>
+                <a href="https://github.com/tedpommes/Rust-DropLaunch/releases" target="_blank" class="bg-accent-blue text-white font-bold py-2 px-4 rounded-full text-md btn"><i class="fas fa-download mr-2"></i>Download</a>
+            </div>
+        </div>
+    </nav>
+    
+    <header class="pt-16 pb-8 text-center">
+        <h2 class="text-4xl font-bold text-white mb-4">Rust Server Script Generator</h2>
+        <p class="text-lg text-gray-400">Choose a script type and fill in the details.</p>
+    </header>
+
+    <div class="flex justify-center container mx-auto px-6">
+        <aside class="hidden lg:block w-1/6 pr-4">
+            <div class="ad-placeholder rounded-lg">
+                <p>Advertisement</p>
+            </div>
+        </aside>
+
+        <main id="generator" class="w-full lg:w-4/6">
+            <div class="flex justify-center border-b border-gray-700">
+                <button id="tab-start" class="tab-btn active-tab">Start Script</button>
+                <button id="tab-custom" class="tab-btn">Custom Map</button>
+                <button id="tab-update" class="tab-btn">Update Script</button>
+            </div>
+
+            <div id="start-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-dark-panel p-8 rounded-b-lg">
+                    <div class="space-y-4">
+                        <h3 class="text-2xl font-bold text-white mb-2">Server Parameters</h3>
+                        <form id="server-form" class="space-y-4">
+                            <div><label for="hostname" class="block text-sm font-medium mb-1">Server Name</label><input type="text" id="hostname" class="form-input w-full rounded-md p-2" placeholder="My Awesome Rust Server"></div>
+                            <div><label for="maxplayers" class="block text-sm font-medium mb-1">Max Players</label><input type="number" id="maxplayers" class="form-input w-full rounded-md p-2" value="100"></div>
+                            <div><label for="worldsize-slider" class="block text-sm font-medium mb-1">World Size</label><div class="flex items-center gap-4"><input type="range" id="worldsize-slider" min="1000" max="6000" value="3500" step="100"><input type="number" id="worldsize-number" class="form-input p-2 rounded-md w-24" min="1000" max="6000" value="3500" step="100"></div></div>
+                            <div><label for="seed" class="block text-sm font-medium mb-1">World Seed</label><input type="number" id="seed" class="form-input w-full rounded-md p-2" value="12345"></div>
+                            <div><label for="port" class="block text-sm font-medium mb-1">Server Port</label><input type="number" id="port" class="form-input w-full rounded-md p-2" value="28015"></div>
+                            <div><label for="rconport" class="block text-sm font-medium mb-1">RCON Port</label><input type="number" id="rconport" class="form-input w-full rounded-md p-2" value="28016"></div>
+                            <div><label for="rconpassword" class="block text-sm font-medium mb-1">RCON Password</label><input type="text" id="rconpassword" class="form-input w-full rounded-md p-2" placeholder="Enter a secure password"></div>
+                            <div><label for="saveinterval" class="block text-sm font-medium mb-1">Save Interval (seconds)</label><input type="number" id="saveinterval" class="form-input w-full rounded-md p-2" value="600"></div>
+                            <div><label for="description" class="block text-sm font-medium mb-1">Server Description</label><textarea id="description" class="form-input w-full rounded-md p-2" rows="2" placeholder="A brief description of your server."></textarea></div>
+                            <div class="pt-2 border-t border-gray-700"><label class="flex items-center space-x-3 cursor-pointer"><input type="checkbox" id="prefab-toggle-start" class="h-5 w-5 rounded form-input bg-gray-600 border-gray-500 text-accent-blue focus:ring-accent-blue"><span class="text-white font-medium">Create Prefab Start File</span></label><p class="text-xs text-gray-400 mt-1 pl-8">Adds parameters for isolated prefab/monument testing.</p></div>
+                        </form>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-bold text-white">Generated Script</h3><div class="flex items-center gap-3"><label class="flex items-center cursor-pointer text-sm text-gray-400"><input type="checkbox" id="wrap-toggle-start" class="sr-only peer"><div class="relative w-9 h-5 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-blue"></div><span class="ml-2 select-none">Wrap</span></label><button id="copy-start-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-copy mr-2"></i>Copy</button><button id="download-start-btn" class="bg-accent-blue hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-download mr-2"></i>Download</button></div></div>
+                        <pre id="output-start" contenteditable="true" class="output-area flex-grow rounded-md p-4 text-sm"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div id="custom-content" class="hidden">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-dark-panel p-8 rounded-b-lg">
+                    <div class="space-y-4">
+                        <h3 class="text-2xl font-bold text-white mb-2">Custom Map Parameters</h3>
+                        <form id="custom-form" class="space-y-4">
+                             <div><label for="map-url" class="block text-sm font-medium mb-1">Map URL</label><input type="url" id="map-url" class="form-input w-full rounded-md p-2" placeholder="https://example.com/mymap.map"></div>
+                            <hr class="border-gray-700">
+                             <div><label for="hostname-custom" class="block text-sm font-medium mb-1">Server Name</label><input type="text" id="hostname-custom" class="form-input w-full rounded-md p-2" placeholder="My Custom Map Server"></div>
+                             <div><label for="maxplayers-custom" class="block text-sm font-medium mb-1">Max Players</label><input type="number" id="maxplayers-custom" class="form-input w-full rounded-md p-2" value="100"></div>
+                             <div><label for="port-custom" class="block text-sm font-medium mb-1">Server Port</label><input type="number" id="port-custom" class="form-input w-full rounded-md p-2" value="28015"></div>
+                             <div><label for="rconport-custom" class="block text-sm font-medium mb-1">RCON Port</label><input type="number" id="rconport-custom" class="form-input w-full rounded-md p-2" value="28016"></div>
+                             <div><label for="rconpassword-custom" class="block text-sm font-medium mb-1">RCON Password</label><input type="text" id="rconpassword-custom" class="form-input w-full rounded-md p-2" placeholder="Enter a secure password"></div>
+                             <div><label for="saveinterval-custom" class="block text-sm font-medium mb-1">Save Interval (seconds)</label><input type="number" id="saveinterval-custom" class="form-input w-full rounded-md p-2" value="600"></div>
+                             <div class="pt-2 border-t border-gray-700"><label class="flex items-center space-x-3 cursor-pointer"><input type="checkbox" id="prefab-toggle-custom" class="h-5 w-5 rounded form-input bg-gray-600 border-gray-500 text-accent-blue focus:ring-accent-blue"><span class="text-white font-medium">Create Prefab Start File</span></label><p class="text-xs text-gray-400 mt-1 pl-8">Adds parameters for isolated prefab/monument testing.</p></div>
+                        </form>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-bold text-white">Generated Script</h3><div class="flex items-center gap-3"><label class="flex items-center cursor-pointer text-sm text-gray-400"><input type="checkbox" id="wrap-toggle-custom" class="sr-only peer"><div class="relative w-9 h-5 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-blue"></div><span class="ml-2 select-none">Wrap</span></label><button id="copy-custom-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-copy mr-2"></i>Copy</button><button id="download-custom-btn" class="bg-accent-blue hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-download mr-2"></i>Download</button></div></div>
+                        <pre id="output-custom" contenteditable="true" class="output-area flex-grow rounded-md p-4 text-sm"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div id="update-content" class="hidden">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-dark-panel p-8 rounded-b-lg">
+                    <div class="space-y-4">
+                        <h3 class="text-2xl font-bold text-white mb-2">SteamCMD Parameters</h3>
+                        <form id="update-form" class="space-y-4">
+                            <div><label for="install-dir" class="block text-sm font-medium mb-1">Rust Server Install Directory</label><input type="text" id="install-dir" class="form-input w-full rounded-md p-2" value="C:\rust_server"></div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Branch</label>
+                                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                                    <label class="flex items-center"><input type="radio" name="branch" value="" checked class="mr-2 accent-accent-blue">Main</label>
+                                    <label class="flex items-center"><input type="radio" name="branch" value="staging" class="mr-2 accent-accent-blue">Staging</label>
+                                    <label class="flex items-center"><input type="radio" name="branch" value="aux01" class="mr-2 accent-accent-blue">Aux01</label>
+                                    <label class="flex items-center"><input type="radio" name="branch" value="aux02" class="mr-2 accent-accent-blue">Aux02</label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-bold text-white">Generated Script</h3><div class="flex items-center gap-3"><label class="flex items-center cursor-pointer text-sm text-gray-400"><input type="checkbox" id="wrap-toggle-update" class="sr-only peer"><div class="relative w-9 h-5 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-blue"></div><span class="ml-2 select-none">Wrap</span></label><button id="copy-update-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-copy mr-2"></i>Copy</button><button id="download-update-btn" class="bg-accent-blue hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-download mr-2"></i>Download</button></div></div>
+                        <pre id="output-update" contenteditable="true" class="output-area flex-grow rounded-md p-4 text-sm"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="hidden lg:block w-1/6 pl-4">
+            <div class="ad-placeholder rounded-lg">
+                <p>Advertisement</p>
+            </div>
+        </aside>
+    </div>
+
+    <footer class="bg-dark-panel py-6 text-center mt-16">
+        <p>© 2025 DropLaunch. All Rights Reserved.</p>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Get Elements ---
+    const tabs = { start: document.getElementById('tab-start'), custom: document.getElementById('tab-custom'), update: document.getElementById('tab-update') };
+    const contents = { start: document.getElementById('start-content'), custom: document.getElementById('custom-content'), update: document.getElementById('update-content') };
+    const forms = { start: document.getElementById('server-form'), custom: document.getElementById('custom-form'), update: document.getElementById('update-form') };
+    const outputs = { start: document.getElementById('output-start'), custom: document.getElementById('output-custom'), update: document.getElementById('output-update') };
+    const buttons = {
+        copyStart: document.getElementById('copy-start-btn'), downloadStart: document.getElementById('download-start-btn'),
+        copyCustom: document.getElementById('copy-custom-btn'), downloadCustom: document.getElementById('download-custom-btn'),
+        copyUpdate: document.getElementById('copy-update-btn'), downloadUpdate: document.getElementById('download-update-btn')
+    };
+    const worldSizeSlider = document.getElementById('worldsize-slider');
+    const worldSizeNumber = document.getElementById('worldsize-number');
+    const toggles = {
+        start: document.getElementById('wrap-toggle-start'),
+        custom: document.getElementById('wrap-toggle-custom'),
+        update: document.getElementById('wrap-toggle-update')
+    };
+    const prefabToggles = {
+        start: document.getElementById('prefab-toggle-start'),
+        custom: document.getElementById('prefab-toggle-custom')
+    };
+
+    // --- Tab Switching ---
+    Object.keys(tabs).forEach(key => {
+        tabs[key].addEventListener('click', () => {
+            Object.values(tabs).forEach(tab => tab.classList.remove('active-tab'));
+            Object.values(contents).forEach(content => content.classList.add('hidden'));
+            tabs[key].classList.add('active-tab');
+            contents[key].classList.remove('hidden');
+        });
+    });
+
+    // --- Word Wrap Toggles ---
+    Object.keys(toggles).forEach(key => {
+        toggles[key].addEventListener('change', () => {
+            outputs[key].classList.toggle('word-wrap-enabled', toggles[key].checked);
+        });
+    });
+
+    // --- Generator Functions ---
+    const generateStartScript = () => {
+        const p = {
+            hostname: document.getElementById('hostname').value, maxplayers: document.getElementById('maxplayers').value,
+            worldsize: worldSizeNumber.value, seed: document.getElementById('seed').value,
+            port: document.getElementById('port').value, rconport: document.getElementById('rconport').value,
+            rconpassword: document.getElementById('rconpassword').value, saveinterval: document.getElementById('saveinterval').value,
+            description: document.getElementById('description').value,
+        };
+        let script = `@echo off\nRustDedicated.exe -batchmode`;
+        script += ` +server.port ${p.port || '28015'}`;
+        script += ` +server.level "Procedural Map"`;
+        script += ` +server.worldsize ${p.worldsize || '3500'}`;
+        script += ` +server.seed ${p.seed || Math.floor(10000 + Math.random() * 90000)}`;
+        script += ` +server.maxplayers ${p.maxplayers || '100'}`;
+        script += ` +server.hostname "${p.hostname || 'My Awesome Rust Server'}"`;
+        if (p.description) script += ` +server.description "${p.description}"`;
+        script += ` +server.saveinterval ${p.saveinterval || '600'}`;
+        script += ` +rcon.port ${p.rconport || '28016'}`;
+        if (p.rconpassword) script += ` +rcon.password "${p.rconpassword}"`;
+        
+        if (prefabToggles.start.checked) {
+            script += ` +cargoship.event_enabled False +baseboat.generate_paths False +ai.ocean_patrol_path_iterations 0 +server.events False +antihack.terrain_protection 0`;
+        }
+        
+        script += `\necho.\necho "Server is running. Press CTRL+C to shut down."`;
+        outputs.start.textContent = script;
+    };
+
+    const generateCustomMapScript = () => { 
+        const p = {
+            mapUrl: document.getElementById('map-url').value,
+            hostname: document.getElementById('hostname-custom').value, maxplayers: document.getElementById('maxplayers-custom').value,
+            port: document.getElementById('port-custom').value, rconport: document.getElementById('rconport-custom').value,
+            rconpassword: document.getElementById('rconpassword-custom').value, saveinterval: document.getElementById('saveinterval-custom').value,
+        };
+        let script = `@echo off\nRustDedicated.exe -batchmode`;
+        script += ` +server.port ${p.port || '28015'}`;
+        script += ` +server.levelurl "${p.mapUrl || ''}"`;
+        script += ` +server.maxplayers ${p.maxplayers || '100'}`;
+        script += ` +server.hostname "${p.hostname || 'My Custom Map Server'}"`;
+        script += ` +server.saveinterval ${p.saveinterval || '600'}`;
+        script += ` +rcon.port ${p.rconport || '28016'}`;
+        if (p.rconpassword) script += ` +rcon.password "${p.rconpassword}"`;
+
+        if (prefabToggles.custom.checked) {
+            script += ` +cargoship.event_enabled False +baseboat.generate_paths False +ai.ocean_patrol_path_iterations 0 +server.events False +antihack.terrain_protection 0`;
+        }
+
+        script += `\necho.\necho "Server is running. Press CTRL+C to shut down."`;
+        outputs.custom.textContent = script;
+    };
+
+    const generateUpdateScript = () => {
+        const installDir = document.getElementById('install-dir').value || 'C:\\rust_server';
+        const branch = document.querySelector('input[name="branch"]:checked').value;
+        const branchArg = branch ? ` -beta ${branch}` : '';
+        let script = `@echo off\nsteamcmd.exe +force_install_dir "${installDir}" +login anonymous +app_update 258550${branchArg} validate +quit\n`;
+        script += `echo.\necho "Rust server update complete."\npause`;
+        outputs.update.textContent = script;
+    };
+
+    // --- Event Listeners ---
+    forms.start.addEventListener('input', generateStartScript);
+    forms.custom.addEventListener('input', generateCustomMapScript);
+    forms.update.addEventListener('input', generateUpdateScript);
+
+    worldSizeSlider.addEventListener('input', () => { worldSizeNumber.value = worldSizeSlider.value });
+    worldSizeNumber.addEventListener('input', () => { worldSizeSlider.value = worldSizeNumber.value });
+    
+    // --- Button Handlers ---
+    const handleCopy = (text, button) => {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = `<i class="fas fa-check mr-2"></i>Copied!`;
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+            }, 2000);
+        });
+    };
+    
+    const handleDownload = (text, filename) => {
+        const blob = new Blob([text.replace(/\n/g, "\r\n")], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    };
+
+    buttons.copyStart.addEventListener('click', () => handleCopy(outputs.start.textContent, buttons.copyStart));
+    buttons.downloadStart.addEventListener('click', () => handleDownload(outputs.start.textContent, 'start_rust_server.bat'));
+    buttons.copyCustom.addEventListener('click', () => handleCopy(outputs.custom.textContent, buttons.copyCustom));
+    buttons.downloadCustom.addEventListener('click', () => handleDownload(outputs.custom.textContent, 'start_custom_map.bat'));
+    buttons.copyUpdate.addEventListener('click', () => handleCopy(outputs.update.textContent, buttons.copyUpdate));
+    buttons.downloadUpdate.addEventListener('click', () => handleDownload(outputs.update.textContent, 'update_rust.bat'));
+
+    // --- Initial Generation ---
+    generateStartScript();
+    generateCustomMapScript();
+    generateUpdateScript();
+});
+</script>
+
+</body>
+</html>
