@@ -243,6 +243,8 @@
           mark(id, "active");
           live(id, null, "Starting…");
         } else if (ev.state === "done") mark(id, "done");
+        // The server starts once the setup window closes (frame.js).
+        else if (ev.state === "waiting") byId[id].note.textContent = "Press Continue";
         else if (ev.state === "skipped") mark(id, "skipped", "Skipped");
         else mark(id, "todo");
         return;
@@ -341,7 +343,7 @@
     server: { page: "setup", target: setupTasks },
     framework: { page: "setup", target: (d) => find(d, "#setup-framework") ?? setupTasks(d) },
     startfile: { page: "setup", target: setupTasks },
-    launch: { page: "setup", target: (d) => setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
+    launch: { page: "setup", target: (d) => find(d, "#setup-close") ?? setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
     ready: { page: "maps", target: (d) => find(d, "#server-panel") },
     join: { page: "maps", target: (d) => find(d, "#server-panel .btn-primary") },
     map: { page: "maps", target: (d) => customMap(d)?.querySelector(".row-play") ?? null },
@@ -459,8 +461,8 @@
     if (!mock.test(html) || !html.includes("<head>")) throw new Error("app/index.html isn't the page tour.js expects");
     return html
       .replace("<head>", `<head>\n    <base href="${APP}" />`)
-      .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css?v=2", HERE)}" />\n  </head>`)
-      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=2", HERE)}"></script>`);
+      .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css?v=3", HERE)}" />\n  </head>`)
+      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=3", HERE)}"></script>`);
   }
 
   async function load() {

@@ -32,7 +32,8 @@ step and nothing loaded from other sites. Cloudflare Pages publishes this reposi
 
   then delete `demo/app/artifact.html` (it's for other hosts). The tour reads the app's commands
   and element ids (`#setup-tasks`, `#server-panel`, `#btn-view`…): when the app renames one, the
-  matching step in `demo/tour.js` needs the new name.
+  matching step in `demo/tour.js` needs the new name. `demo/frame.js` runs the setup 3× slower than
+  the mock (`SETUP_SLOWER`) and starts the test server only once the setup window closes.
 
 ## Trying it locally
 
