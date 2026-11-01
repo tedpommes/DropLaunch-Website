@@ -1,228 +1,406 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DropLaunch - Rust Map Testing Made Simple</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            background-color: #1e2028; /* main back color */
-            color: #b2b7bf; /* white text */
-        }
-        .bg-dark-panel {
-            background-color: #1c1b1f; /* darker panels */
-        }
-        .accent-blue {
-            color: #7a95e3; /* blue main accent */
-        }
-        .bg-accent-blue {
-            background-color: #7a95e3;
-        }
-        .btn {
-            transition: all 0.3s ease;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .feature-card {
-            background-color: #2a2c35;
-            border-left: 4px solid #7a95e3;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        /* Colored Brand Icons */
-        .fa-github { color: #ffffff; } /* White for GitHub */
-        .fa-discord { color: #5865F2; } /* Discord Blue */
-        .fa-youtube { color: #FF0000; } /* YouTube Red */
-        
-        /* Screenshot Gallery Styles */
-        .screenshot-gallery {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 1rem;
-        }
-        .screenshot-gallery::-webkit-scrollbar { height: 8px; }
-        .screenshot-gallery::-webkit-scrollbar-track { background: #2a2c35; border-radius: 4px; }
-        .screenshot-gallery::-webkit-scrollbar-thumb { background-color: #7a95e3; border-radius: 4px; }
-        .screenshot-gallery img {
-            flex-shrink: 0;
-            height: 280px;
-            width: auto;
-            object-fit: cover;
-        }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DropLaunch: test your Rust maps on your own server, in one click</title>
+    <meta name="description" content="Drop a .map file on DropLaunch and it starts a Rust server with that map. Free and open source for Windows: one-click setup, Carbon or Oxide, bug reports from testers on a map of your island." />
+    <link rel="canonical" href="https://droplaunch.gg/" />
+    <meta name="theme-color" content="#1e2028" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/assets/favicon-32.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DropLaunch" />
+    <meta property="og:title" content="DropLaunch: test your Rust maps in one click" />
+    <meta property="og:description" content="Drop a .map file on DropLaunch and it starts a Rust server with that map. No SteamCMD commands, no batch files, no config to edit." />
+    <meta property="og:url" content="https://droplaunch.gg/" />
+    <meta property="og:image" content="https://droplaunch.gg/assets/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="DropLaunch with the server console, live stats, give items and bug reports open" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" as="image" href="/assets/img/main-640.webp" imagesrcset="/assets/img/main-640.webp 640w, /assets/img/main-1280.webp 1280w" imagesizes="(max-width: 860px) 380px, 430px" fetchpriority="high" />
+    <link rel="stylesheet" href="/assets/site.css?v=1" />
+    <script src="/assets/site.js?v=1" defer></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "DropLaunch",
+        "description": "Test your Rust maps on your own server, in one click. Drop a .map file on DropLaunch and it starts a Rust server with that map.",
+        "url": "https://droplaunch.gg/",
+        "downloadUrl": "https://github.com/tedpommes/DropLaunch/releases/latest/download/DropLaunch.exe",
+        "operatingSystem": "Windows 10, Windows 11",
+        "applicationCategory": "DeveloperApplication",
+        "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+        "image": "https://droplaunch.gg/assets/og.jpg",
+        "screenshot": "https://droplaunch.gg/assets/img/main-1280.webp",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+  </head>
+  <body>
+    <svg class="sprite" aria-hidden="true">
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16" /></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" /></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6.5V20l6-2.5 6 2.5 6-2.5V4l-6 2.5z" /><path d="M9 4v13.5M15 6.5V20" /></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12M12 8v12.5M12 8S10.5 3.5 8 3.5a2.25 2.25 0 0 0 0 4.5M12 8s1.5-4.5 4-4.5a2.25 2.25 0 0 1 0 4.5" /></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><path d="M8.5 12.2l2.4 2.4 4.6-4.8" /></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2" /><path d="M21 4v5h-5M3 20v-5h5" /></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></symbol>
+      <symbol id="i-join" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></symbol>
+      <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.7 10.7c.7.6 1.2 1.4 1.2 2.3h5c0-.9.5-1.7 1.2-2.3A6 6 0 0 0 12 3z" /></symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6.2L4.6 18.4A1.7 1.7 0 0 0 6.1 21h11.8a1.7 1.7 0 0 0 1.5-2.6L14 9.2V3" /><path d="M7.2 15h9.6" /></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M4 6l6 6-6 6M12 18h8" /></symbol>
+      <symbol id="i-terrain" viewBox="0 0 24 24"><path d="M2.5 19.5l6.5-10 4.5 6.5 3-4 5 7.5z" /><circle cx="17" cy="6" r="2" /></symbol>
+      <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3" /></symbol>
+      <symbol id="i-discord" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M20.3 4.4A19.8 19.8 0 0 0 15.4 2.9l-.6 1.3a18.3 18.3 0 0 0-5.5 0l-.6-1.3a19.7 19.7 0 0 0-4.9 1.5C.5 9-.3 13.6.1 18.1a19.9 19.9 0 0 0 6 3l1.3-2a12.9 12.9 0 0 1-1.9-.9l.4-.3a14.2 14.2 0 0 0 12.1 0l.4.3a12.3 12.3 0 0 1-1.9.9l1.2 2a19.8 19.8 0 0 0 6-3c.5-5.2-.8-9.7-3.5-13.7zM8 15.3c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4z" /></symbol>
+    </svg>
 
-        /* Lightbox styles */
-        .lightbox { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); justify-content: center; align-items: center; }
-        .lightbox-content { max-width: 90%; max-height: 80%; }
-        .lightbox-close, .lightbox-prev, .lightbox-next { position: absolute; color: white; font-size: 2rem; cursor: pointer; user-select: none; }
-        .lightbox-close { top: 20px; right: 30px; }
-        .lightbox-prev, .lightbox-next { top: 50%; transform: translateY(-50%); }
-        .lightbox-prev { left: 20px; }
-        .lightbox-next { right: 20px; }
+    <a class="skip" href="#main">Skip to content</a>
 
-        /* Ad Placeholder Style */
-        .ad-placeholder {
-            background-color: #2a2c35;
-            border: 2px dashed #4a4d58;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: #6b7280;
-            font-weight: 600;
-            min-height: 600px;
-        }
-    </style>
-</head>
-<body class="font-sans antialiased">
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/assets/logo-96.webp" width="32" height="32" alt="" />
+          DropLaunch
+        </a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="Menu">
+          <svg class="icon open"><use href="#i-menu" /></svg>
+          <svg class="icon close"><use href="#i-x" /></svg>
+        </button>
+        <nav class="nav" id="nav" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="/demo/">Demo</a>
+          <a href="/generator">Start file generator</a>
+          <a href="#faq">Questions</a>
+          <a href="https://github.com/tedpommes/DropLaunch" rel="noopener"><svg class="icon"><use href="#i-github" /></svg>GitHub</a>
+          <a href="https://discord.gg/hbXD2YArdV" rel="noopener"><svg class="icon"><use href="#i-discord" /></svg>Discord</a>
+          <a class="btn primary small" href="#download"><svg class="icon"><use href="#i-download" /></svg>Download</a>
+        </nav>
+      </div>
+    </header>
 
-    <nav class="bg-dark-panel p-4 shadow-lg sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="index.html" class="flex items-center">
-                <img src="https://i.imgur.com/cPg1ocQ.png" alt="DropLaunch Logo" class="h-8 w-8 mr-2">
-                <h1 class="text-2xl font-bold accent-blue">DropLaunch</h1>
-            </a>
-            <div>
-                <a href="generator.html" class="text-lg hover:text-white px-3 py-2 rounded">
-                    <i class="fas fa-file-code mr-1" style="color: #f39c12;"></i> Generator
-                </a>
-                <a href="https://github.com/tedpommes/Rust-DropLaunch" target="_blank" class="text-lg hover:text-white px-3 py-2 rounded"><i class="fab fa-github"></i> GitHub</a>
-                <a href="https://discord.gg/hbXD2YArdV" target="_blank" class="text-lg hover:text-white px-3 py-2 rounded"><i class="fab fa-discord"></i> Discord</a>
-                <a href="https://github.com/tedpommes/Rust-DropLaunch/releases/download/V03Release/Rust.DropLaunch.exe" target="_blank" class="bg-accent-blue text-white font-bold py-2 px-4 rounded-full text-md btn"><i class="fas fa-download mr-2"></i>Download</a>
+    <main id="main">
+      <section class="hero">
+        <div class="wrap">
+          <div>
+            <span class="eyebrow"><svg class="icon"><use href="#i-map" /></svg>For Rust map makers</span>
+            <h1>Test your Rust maps on your own server, <span>in one click.</span></h1>
+            <p class="lead">Drop a <code>.map</code> file on DropLaunch and it starts a Rust server with that map. No SteamCMD commands, no batch files, no config to edit.</p>
+            <div class="actions">
+              <a class="btn primary" href="https://github.com/tedpommes/DropLaunch/releases/latest/download/DropLaunch.exe">
+                <svg class="icon"><use href="#i-download" /></svg>
+                <span class="label">Download for Windows<span class="sub"><span data-release="version">Latest version</span> · Free</span></span>
+              </a>
+              <a class="btn" href="/demo/">
+                <svg class="icon"><use href="#i-play" /></svg>
+                <span class="label">Try it in your browser<span class="sub">The real app, simulated</span></span>
+              </a>
             </div>
+            <ul class="facts">
+              <li><svg class="icon"><use href="#i-check" /></svg>Free and open source</li>
+              <li><svg class="icon"><use href="#i-check" /></svg>One small exe, no installer</li>
+              <li><svg class="icon"><use href="#i-check" /></svg>No accounts, no telemetry</li>
+            </ul>
+          </div>
+          <figure class="shot">
+            <button type="button" data-shot="/assets/img/main-1280.webp" data-caption="All your maps in one list, with the server running.">
+              <img src="/assets/img/main-640.webp" srcset="/assets/img/main-640.webp 640w, /assets/img/main-1280.webp 1280w" sizes="(max-width: 860px) 380px, 430px" width="640" height="950" fetchpriority="high" alt="DropLaunch's map list with a server running" />
+            </button>
+          </figure>
         </div>
-    </nav>
+      </section>
 
-    <div class="flex justify-center">
-        <aside class="hidden lg:block w-1/6 p-4">
-            <div class="ad-placeholder rounded-lg">
-                <p>Advertisement</p>
+      <section id="how">
+        <div class="wrap">
+          <div class="head center">
+            <span class="eyebrow">How it works</span>
+            <h2>From a map file to playing on it</h2>
+            <p>Three steps, and only the first time. After that it's drop a map and click ▶.</p>
+          </div>
+          <ol class="steps">
+            <li>
+              <h3>Download and start it</h3>
+              <p>Put <code>DropLaunch.exe</code> in an empty folder, like <code>C:\DropLaunch</code>, and start it. It creates its folders next to itself.</p>
+            </li>
+            <li>
+              <h3>Set up a server</h3>
+              <p>One click downloads SteamCMD and the Rust server: about 6 GB, 5 to 30 minutes. Pick Carbon or Oxide and the RustEdit extension meanwhile.</p>
+            </li>
+            <li>
+              <h3>Drop a map and play</h3>
+              <p>Drop a <code>.map</code> or <code>.zip</code> on the window and click ▶. When it says Ready, <b>Join in Rust</b> takes you in.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="wrap showcase">
+          <figure class="shot">
+            <button type="button" data-shot="/assets/img/setup-1280.webp" data-caption="The first-time setup, downloading the Rust server.">
+              <img src="/assets/img/setup-640.webp" srcset="/assets/img/setup-640.webp 640w, /assets/img/setup-1280.webp 1280w" sizes="(max-width: 860px) 360px, 400px" width="640" height="950" loading="lazy" decoding="async" alt="The first-time setup downloading the Rust server" />
+            </button>
+          </figure>
+          <div>
+            <span class="eyebrow">Setup</span>
+            <h2>Sets everything up for you</h2>
+            <p>The first time, one click downloads SteamCMD and the Rust server. While it downloads you pick the rest, and <b>Hide</b> keeps it going in the background.</p>
+            <ul class="ticks">
+              <li><svg class="icon"><use href="#i-check" /></svg><span><b>Carbon or Oxide</b>, updated along with the server</span></li>
+              <li><svg class="icon"><use href="#i-check" /></svg><span><b>The RustEdit extension</b>, for maps that need it</span></li>
+              <li><svg class="icon"><use href="#i-check" /></svg><span><b>Admin on every test server</b>, with the Steam account it finds on your PC</span></li>
+              <li><svg class="icon"><use href="#i-check" /></svg><span><b>Finds what you already have</b>: SteamCMD and server files are reused, not downloaded again</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="head center">
+            <span class="eyebrow"><svg class="icon"><use href="#i-flask" /></svg>Playtesting</span>
+            <h2>Bug reports from your testers</h2>
+            <p>Testers type <code>/bug</code> and a few words in Rust's chat. The report shows up on a map of your island, with where they stood and which way they looked. Teleport there to see it yourself.</p>
+          </div>
+          <figure class="wide-shot">
+            <div class="shot">
+              <button type="button" data-shot="/assets/img/bug-reports-2480.webp" data-caption="Bug reports from testers, on a map of your island. Testers show up live while they play.">
+                <img src="/assets/img/bug-reports-1240.webp" srcset="/assets/img/bug-reports-1240.webp 1240w, /assets/img/bug-reports-2480.webp 2480w" sizes="(max-width: 1080px) calc(100vw - 40px), 1040px" width="1240" height="950" loading="lazy" decoding="async" alt="Bug reports on a map of the island" />
+              </button>
             </div>
-        </aside>
+            <figcaption>Testers show up live on the map while they play.</figcaption>
+          </figure>
+        </div>
+      </section>
 
-        <main class="w-full lg:w-4/6">
-            <header class="py-20 text-center">
-                <div class="container mx-auto">
-                    <h2 class="text-5xl font-extrabold text-white">Rust Map Testing, Simplified.</h2>
-                    <p class="text-xl mt-4 max-w-2xl mx-auto">A beginner-friendly, open source utility that makes local Rust map testing fast, clean, and frustration-free.</p>
-                    <div class="mt-8">
-                        <a href="https://github.com/tedpommes/Rust-DropLaunch/releases/download/V0.2.1/Rust.DropLaunch.exe" target="_blank" class="bg-accent-blue text-white font-bold py-3 px-8 rounded-full text-lg btn"><i class="fas fa-download mr-2"></i>Download Latest Version</a>
-                    </div>
-                </div>
-            </header>
-
-            <section id="features" class="py-20 bg-dark-panel">
-                <div class="container mx-auto px-6">
-                    <h3 class="text-4xl font-bold text-center text-white mb-12">Key Features</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-cogs mr-2" style="color: #f39c12;"></i>One-Click Server Setup</h4><p>Automatically installs SteamCMD and configures a local Rust server for testing.</p></div>
-                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-mouse-pointer mr-2" style="color: #e74c3c;"></i>Drag & Drop Loading</h4><p>Just drop your .map file into the app, and it does the rest—even if the app is not running.</p></div>
-                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-sync-alt mr-2" style="color: #3498db;"></i>Real-Time Map Monitoring</h4><p>Detects map file changes instantly and updates the map list to ensure accurate data.</p></div>
-                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-bell mr-2" style="color: #f1c40f;"></i>Desktop Notifications</h4><p>Get notified when maps are saved and start a server with the newest map version by clicking the notification.</p></div>
-                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-history mr-2" style="color: #9b59b6;"></i>Map History Tracking</h4><p>View and relaunch maps you've previously tested, no digging needed.</p></div>
-                        <div class="feature-card p-6 rounded-lg"><h4 class="text-2xl font-bold accent-blue mb-2"><i class="fas fa-broom mr-2" style="color: #2ecc71;"></i>Server & Client Cleanup</h4><p>Ensure a fresh environment with every server boot. No file mismatch errors.</p></div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="screenshots" class="py-20">
-                <div class="container mx-auto px-6">
-                    <h3 class="text-4xl font-bold text-center text-white mb-12">Screenshots</h3>
-                    <div class="screenshot-gallery gap-4">
-                        <img src="https://i.imgur.com/C7SMrze.png" alt="Screenshot 1" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(0)">
-                        <img src="https://i.imgur.com/zrMcqGw.png" alt="Screenshot 2" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(1)">
-                        <img src="https://i.imgur.com/3v4zlbn.png" alt="Screenshot 3" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(2)">
-                        <img src="https://i.imgur.com/J2MSQqx.png" alt="Screenshot 4" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(3)">
-                        <img src="https://i.imgur.com/OlSrFwa.png" alt="Screenshot 5" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(4)">
-                        <img src="https://i.imgur.com/HAbXP02.png" alt="Screenshot 6" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(5)">
-                        <img src="https://i.imgur.com/OlSrFwa.png" alt="Screenshot 7" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(6)">
-                        <img src="https://i.imgur.com/lh8jCeo.png" alt="Screenshot 8" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(7)">
-                        <img src="https://i.imgur.com/NgNpKMR.png" alt="Screenshot 9" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(8)">
-                        <img src="https://i.imgur.com/GJdiv4b.png" alt="Screenshot 10" class="cursor-pointer rounded-lg shadow-lg hover:opacity-80 transition-opacity" onclick="openLightbox(9)">
-                    </div>
-                </div>
-            </section>
-
-            <section id="tutorials" class="py-20 bg-dark-panel">
-                <div class="container mx-auto px-6">
-                    <h3 class="text-4xl font-bold text-center text-white mb-12">Video Tutorials</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-dark-panel p-6 rounded-lg shadow-lg"><h4 class="text-2xl font-bold accent-blue mb-4 text-center"><i class="fab fa-youtube mr-2"></i>Quick Start Guide</h4><div class="aspect-video w-full rounded-lg overflow-hidden"><iframe src="https://www.youtube.com/embed/072XwfL8YqY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe></div><p class="text-center mt-4">A fast-paced guide to get you up and running with DropLaunch in minutes.</p></div>
-                        <div class="bg-dark-panel p-6 rounded-lg shadow-lg"><h4 class="text-2xl font-bold accent-blue mb-4 text-center"><i class="fab fa-youtube mr-2"></i>Full Walkthrough</h4><div class="aspect-video w-full rounded-lg overflow-hidden"><iframe src="https://www.youtube.com/embed/your_video_id_here" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe></div><p class="text-center mt-4">A comprehensive look at all of DropLaunch's features and how to utilize them.</p></div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="download" class="py-20">
-                <div class="container mx-auto text-center">
-                    <h3 class="text-4xl font-bold text-white mb-4">Get Started with DropLaunch</h3>
-                    <div class="flex flex-wrap justify-center items-center gap-4">
-                        <a href="https://github.com/tedpommes/Rust-DropLaunch/releases/download/V0.2.1/Rust.DropLaunch.exe" target="_blank" class="bg-accent-blue text-white font-bold py-3 px-6 rounded-full text-lg btn"><i class="fas fa-download mr-2"></i>Download Latest</a>
-                        <a href="https://github.com/tedpommes/Rust-DropLaunch" target="_blank" class="border-2 border-accent-blue text-white font-bold py-3 px-6 rounded-full text-lg btn"><i class="fab fa-github mr-2"></i>View on GitHub</a>
-                        <a href="https://discord.gg/hbXD2YArdV" target="_blank" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-full text-lg btn"><i class="fab fa-discord mr-2"></i>Join our Discord</a>
-                    </div>
-                </div>
-            </section>
-
-            <footer class="bg-dark-panel py-6 text-center">
-                <p>© 2025 DropLaunch. All Rights Reserved.</p>
-            </footer>
-        </main>
-        
-        <aside class="hidden lg:block w-1/6 p-4">
-            <div class="ad-placeholder rounded-lg">
-                <p>Advertisement</p>
+      <section>
+        <div class="wrap">
+          <div class="head center">
+            <span class="eyebrow"><svg class="icon"><use href="#i-terminal" /></svg>More options</span>
+            <h2>Everything else, right next to your maps</h2>
+            <p>Open the side panel for the server console, live server stats, kits that give items to you and your testers, and the bug reports.</p>
+          </div>
+          <figure class="wide-shot">
+            <div class="shot">
+              <button type="button" data-shot="/assets/img/expanded-2480.webp" data-caption="More options: the console, live stats, give items and bug reports, all next to your maps.">
+                <img src="/assets/img/expanded-1240.webp" srcset="/assets/img/expanded-1240.webp 1240w, /assets/img/expanded-2480.webp 2480w" sizes="(max-width: 1080px) calc(100vw - 40px), 1040px" width="1240" height="950" loading="lazy" decoding="async" alt="The expanded view: server console, live stats, give items and bug reports" />
+              </button>
             </div>
-        </aside>
-    </div>
+            <figcaption>The console, live stats, give items and bug reports.</figcaption>
+          </figure>
+        </div>
+      </section>
 
-    <div id="lightbox" class="lightbox" onclick="closeLightboxOnClick(event)">
-        <span class="lightbox-close" onclick="closeLightbox()">×</span>
-        <span class="lightbox-prev" onclick="changeImage(-1)">❮</span>
-        <img class="lightbox-content" id="lightbox-img">
-        <span class="lightbox-next" onclick="changeImage(1)">❯</span>
-    </div>
+      <section>
+        <div class="wrap">
+          <div class="head center">
+            <span class="eyebrow">And more</span>
+            <h2>Made for testing maps</h2>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-map" /></svg></span>
+              <h3>All your maps in one list</h3>
+              <p>Everything in your maps folder, plus the maps you started before. Click ▶ to start one.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-refresh" /></svg></span>
+              <h3>Notices when you save</h3>
+              <p>Save a map in RustEdit and DropLaunch offers to restart the server with it, with a Windows notification when it's in the background.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-join" /></svg></span>
+              <h3>Starts, then joins</h3>
+              <p>Shows the server starting step by step and tells you if it gets stuck. At Ready, <b>Join in Rust</b> gets you in.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-gift" /></svg></span>
+              <h3>Gives items</h3>
+              <p>From kits you make, or the built-in build kit: a building plan, a hammer and plenty of materials.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-file" /></svg></span>
+              <h3>Start files and branches</h3>
+              <p>Make a start file for any map, try other server branches, and type in the server's own console.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-terrain" /></svg></span>
+              <h3>Cleans Rust's map cache</h3>
+              <p>Rust keeps every map it downloads. DropLaunch clears them out, backed up for 30 days first.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-bulb" /></svg></span>
+              <h3>Shows you around</h3>
+              <p>New to hosting? Tips explain each step as it comes up, and a Getting started list ticks itself off.</p>
+            </div>
+            <div class="card">
+              <span class="badge"><svg class="icon"><use href="#i-shield" /></svg></span>
+              <h3>Signed updates</h3>
+              <p>It tells you what's new and updates in one click. Every update is signed, so nobody can slip in another.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-<script>
-    const galleryImages = document.querySelectorAll('.screenshot-gallery img');
-    const images = Array.from(galleryImages).map(img => img.src);
-    let currentIndex = 0;
+      <section id="try">
+        <div class="wrap tryout">
+          <div class="panel">
+            <span class="eyebrow"><svg class="icon"><use href="#i-play" /></svg>Demo</span>
+            <h2>Try it before you download</h2>
+            <p>DropLaunch's real interface, in your browser: set up a server, start a map and look at bug reports. Downloads, the server and Rust are simulated, so nothing is installed.</p>
+            <a class="btn primary" href="/demo/">Open the demo<svg class="icon"><use href="#i-arrow-right" /></svg></a>
+          </div>
+          <div class="panel">
+            <span class="eyebrow"><svg class="icon"><use href="#i-file" /></svg>Generator</span>
+            <h2>Rather write your own start file?</h2>
+            <p>The start file generator makes a <code>.bat</code> or <code>.sh</code> that starts a Rust server: procedural or custom map, RCON, and a script that installs and updates the server with SteamCMD.</p>
+            <a class="btn" href="/generator">Open the generator<svg class="icon"><use href="#i-arrow-right" /></svg></a>
+          </div>
+        </div>
+      </section>
 
-    function openLightbox(index) {
-        currentIndex = index;
-        document.getElementById('lightbox-img').src = images[currentIndex];
-        document.getElementById('lightbox').style.display = 'flex';
-    }
+      <section id="faq">
+        <div class="wrap">
+          <div class="head center">
+            <span class="eyebrow">Questions</span>
+            <h2>Good to know</h2>
+          </div>
+          <div class="faq">
+            <details id="smartscreen">
+              <summary>Windows says "Windows protected your PC"<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>Windows shows this for programs that aren't code-signed and that not many people have downloaded yet. Click <b>More info</b>, then <b>Run anyway</b>.</p>
+                <p>Every release is built from the source on <a href="https://github.com/tedpommes/DropLaunch" rel="noopener">GitHub</a>, so you can check what it does.</p>
+              </div>
+            </details>
+            <details>
+              <summary>My antivirus doesn't like it<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>Tools that download files and start servers sometimes get flagged by mistake. Please <a href="https://github.com/tedpommes/DropLaunch/issues" rel="noopener">open an issue</a> saying which antivirus, so it can be reported as a false positive.</p>
+              </div>
+            </details>
+            <details>
+              <summary>What do I need?<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>Windows 10 or 11 (64-bit), about 7 GB of free disk space for the Rust server, and Rust on Steam to join your server. No installer, no .NET, no other downloads.</p>
+              </div>
+            </details>
+            <details>
+              <summary>How do I update?<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>DropLaunch tells you when a new version is out and what changed, and one click updates it. Every update is signed with the author's key: DropLaunch refuses a download that doesn't match.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Does it collect anything about me?<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>No. DropLaunch has no accounts, no analytics and no telemetry. Its settings, maps, kits, bug reports and log stay on your PC.</p>
+                <p>On its own it only looks for updates on GitHub and loads the Rust server's branch list. Everything else, like downloading the server, happens when you ask for it. <a href="https://github.com/tedpommes/DropLaunch#privacy" rel="noopener">All the details</a>.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Something doesn't work<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>Please <a href="https://github.com/tedpommes/DropLaunch/issues" rel="noopener">open an issue</a> or ask on <a href="https://discord.gg/hbXD2YArdV" rel="noopener">Discord</a>, and attach <code>droplaunch.log</code> from <code>%LOCALAPPDATA%\DropLaunch</code>: DropLaunch writes what went wrong there.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Is it really free?<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>Yes. DropLaunch is free software under the <a href="https://github.com/tedpommes/DropLaunch/blob/main/LICENSE" rel="noopener">GNU General Public License v3.0</a>: free to use, share and change.</p>
+              </div>
+            </details>
+            <details>
+              <summary>How do I remove it?<svg class="icon"><use href="#i-chevron" /></svg></summary>
+              <div class="answer">
+                <p>Stop any running server, then delete the DropLaunch folder. Its settings, kits and bug reports are in <code>%LOCALAPPDATA%\DropLaunch</code>: delete that folder too.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
 
-    function closeLightbox() {
-        document.getElementById('lightbox').style.display = 'none';
-    }
-    
-    function closeLightboxOnClick(event) {
-        if (event.target.id === 'lightbox') {
-            closeLightbox();
-        }
-    }
+      <section id="download">
+        <div class="wrap">
+          <div class="head center">
+            <span class="eyebrow"><svg class="icon"><use href="#i-download" /></svg>Download</span>
+            <h2>Get DropLaunch</h2>
+            <p>Free for Windows 10 and 11. One exe: put it in an empty folder and start it.</p>
+          </div>
+          <div class="download">
+            <div class="panel">
+              <h3>What's new</h3>
+              <a class="btn primary" href="https://github.com/tedpommes/DropLaunch/releases/latest/download/DropLaunch.exe">
+                <svg class="icon"><use href="#i-download" /></svg>
+                <span class="label">Download DropLaunch.exe<span class="sub"><span data-release="version">Latest version</span> for Windows</span></span>
+              </a>
+              <div class="meta" data-release-hide hidden>
+                <span data-release="size"></span>
+                <span>Released <span data-release="date"></span></span>
+              </div>
+              <div class="notes" data-release-hide hidden>
+                <div data-release="notes"></div>
+              </div>
+              <p class="meta">
+                <a data-release="page" href="https://github.com/tedpommes/DropLaunch/releases/latest" rel="noopener">Release notes</a>
+                <a href="https://github.com/tedpommes/DropLaunch/releases" rel="noopener">All versions</a>
+                <a href="https://github.com/tedpommes/DropLaunch" rel="noopener">Source code</a>
+              </p>
+            </div>
+            <div class="panel">
+              <h3>What you need</h3>
+              <ul class="needs">
+                <li><svg class="icon"><use href="#i-check" /></svg>Windows 10 or 11, 64-bit</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>About 7 GB of free disk space, for the Rust server</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Rust on Steam, to join your server</li>
+              </ul>
+              <div class="note">
+                <svg class="icon"><use href="#i-shield" /></svg>
+                <span>If Windows says it protected your PC, click <b>More info</b>, then <b>Run anyway</b>. <a href="#smartscreen">Why?</a></span>
+              </div>
+              <p>New to hosting? The app's <b>Show me around</b> explains each step as you go, and the <a href="https://github.com/tedpommes/DropLaunch/blob/main/docs/GUIDE.md" rel="noopener">full guide</a> covers everything else.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
 
-    function changeImage(step) {
-        currentIndex += step;
-        if (currentIndex >= images.length) {
-            currentIndex = 0;
-        }
-        if (currentIndex < 0) {
-            currentIndex = images.length - 1;
-        }
-        document.getElementById('lightbox-img').src = images[currentIndex];
-    }
-</script>
+    <footer class="foot">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/assets/logo-96.webp" width="32" height="32" alt="" loading="lazy" />
+          DropLaunch
+        </a>
+        <nav aria-label="Footer">
+          <a href="/demo/">Demo</a>
+          <a href="/generator">Start file generator</a>
+          <a href="https://github.com/tedpommes/DropLaunch" rel="noopener">GitHub</a>
+          <a href="https://github.com/tedpommes/DropLaunch/releases" rel="noopener">Releases</a>
+          <a href="https://discord.gg/hbXD2YArdV" rel="noopener">Discord</a>
+        </nav>
+        <p class="small">© 2026 DropLaunch · Free software under the GPL-3.0 · Not affiliated with Facepunch Studios or Valve. Rust is a trademark of Facepunch Studios.</p>
+      </div>
+    </footer>
 
-</body>
+    <dialog class="lightbox" id="lightbox" aria-label="Screenshot">
+      <div class="bar">
+        <button class="round close" type="button" aria-label="Close"><svg class="icon"><use href="#i-x" /></svg></button>
+      </div>
+      <div class="stage">
+        <button class="round prev" type="button" aria-label="Previous screenshot"><svg class="icon"><use href="#i-chevron" /></svg></button>
+        <img alt="" />
+        <button class="round next" type="button" aria-label="Next screenshot"><svg class="icon"><use href="#i-chevron" /></svg></button>
+      </div>
+      <p class="caption"></p>
+    </dialog>
+  </body>
 </html>
