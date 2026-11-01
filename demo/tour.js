@@ -304,48 +304,84 @@
     await wait(120);
   }
 
-  /** What each step's Show me points at (null: its Do it line flashes instead). */
+  /**
+   * Onto the page a step is on: out of what covers it (Settings, About, the map viewer, the setup
+   * window), then its tab, which also leaves the bug reports page and a card on full screen.
+   * "setup": the setup or welcome window when one is open, else the Maps page.
+   */
+  async function goTo(d, page) {
+    const open = (id) => visible(d.getElementById(id));
+    const press = (id) => d.getElementById(id)?.click();
+    let moved = false;
+    for (const [cover, close] of [["settings", "settings-close"], ["about", "about-close"], ["map-viewer", "mv-close"]]) {
+      if (!open(cover)) continue;
+      press(close);
+      moved = true;
+    }
+    if (page === "setup" && (open("setup") || open("welcome"))) {
+      if (moved) await wait(300);
+      return;
+    }
+    // A finished setup has Continue; one that's running goes on in the background (Hide).
+    if (open("setup")) {
+      press(open("setup-close") ? "setup-close" : "setup-later");
+      moved = true;
+    }
+    const tab = page === "files" ? "files" : "maps";
+    if (tab === "files") await moreOptions(d);
+    if (!find(d, `#view-${tab}`) || d.body.classList.contains("playtest-open")) moved = true;
+    press(`tab-${tab}`);
+    if (moved) await wait(300);
+  }
+
+  /** Each step's page (see goTo) and what Show me points at there (null: its Do it line flashes). */
   const SHOW = {
-    setup: (d) => find(d, "#welcome-host") ?? find(d, "#setup-fix") ?? find(d, "#strip-action"),
-    steamcmd: setupTasks,
-    server: setupTasks,
-    framework: (d) => find(d, "#setup-framework") ?? setupTasks(d),
-    startfile: setupTasks,
-    launch: (d) => setupTasks(d) ?? find(d, "#map-list .map-row .row-play"),
-    ready: (d) => find(d, "#server-panel"),
-    join: (d) => find(d, "#server-panel .btn-primary"),
-    map: (d) => customMap(d)?.querySelector(".row-play") ?? null,
-    async mapfiles(d) {
-      const row = customMap(d);
-      if (!row) return null;
-      const r = row.getBoundingClientRect();
-      row.dispatchEvent(new d.defaultView.MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
-      await wait(60);
-      return [...d.querySelectorAll(".ctx-menu [role=menuitem]")].find((b) => /start file/i.test(b.textContent)) ?? row;
+    setup: { page: "setup", target: (d) => find(d, "#welcome-host") ?? find(d, "#setup-fix") ?? find(d, "#strip-action") },
+    steamcmd: { page: "setup", target: setupTasks },
+    server: { page: "setup", target: setupTasks },
+    framework: { page: "setup", target: (d) => find(d, "#setup-framework") ?? setupTasks(d) },
+    startfile: { page: "setup", target: setupTasks },
+    launch: { page: "setup", target: (d) => setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
+    ready: { page: "maps", target: (d) => find(d, "#server-panel") },
+    join: { page: "maps", target: (d) => find(d, "#server-panel .btn-primary") },
+    map: { page: "maps", target: (d) => customMap(d)?.querySelector(".row-play") ?? null },
+    mapfiles: {
+      page: "maps",
+      async target(d) {
+        const row = customMap(d);
+        if (!row) return null;
+        row.scrollIntoView({ block: "nearest" });
+        const r = row.getBoundingClientRect();
+        row.dispatchEvent(new d.defaultView.MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+        await wait(60);
+        return [...d.querySelectorAll(".ctx-menu [role=menuitem]")].find((b) => /start file/i.test(b.textContent)) ?? row;
+      },
     },
-    async bug(d) {
-      await moreOptions(d);
-      await unfold(d, "bugs-card");
-      return find(d, "#bugs-card");
+    bug: {
+      page: "maps",
+      async target(d) {
+        await moreOptions(d);
+        await unfold(d, "bugs-card");
+        return find(d, "#bugs-card");
+      },
     },
-    async console(d) {
-      await moreOptions(d);
-      return find(d, "#console-form");
+    console: {
+      page: "maps",
+      async target(d) {
+        await moreOptions(d);
+        return find(d, "#console-form");
+      },
     },
-    async kits(d) {
-      await moreOptions(d);
-      await unfold(d, "kits-card");
-      return find(d, "#kits-card");
+    kits: {
+      page: "maps",
+      async target(d) {
+        await moreOptions(d);
+        await unfold(d, "kits-card");
+        return find(d, "#kits-card");
+      },
     },
-    stop: (d) => find(d, "#server-panel .btn-danger"),
-    async update(d) {
-      await moreOptions(d);
-      if (!find(d, "#view-files")) {
-        d.getElementById("tab-files")?.click();
-        await wait(150);
-      }
-      return find(d, "#btn-primary:not([disabled])") ?? find(d, "#btn-verify");
-    },
+    stop: { page: "maps", target: (d) => find(d, "#server-panel .btn-danger") },
+    update: { page: "files", target: (d) => find(d, "#btn-primary:not([disabled])") ?? find(d, "#btn-verify") },
   };
 
   /** A ring around `target` in the window for a few seconds. */
@@ -372,12 +408,17 @@
       else stop();
     };
     stopRing = stop;
-    raf = view.requestAnimationFrame(follow);
+    follow(performance.now());
   }
 
   async function showMe(s) {
     const d = doc();
-    const target = d?.body ? await Promise.resolve().then(() => SHOW[s.id](d)).catch(() => null) : null;
+    const show = SHOW[s.id];
+    const target = d?.body
+      ? await goTo(d, show.page)
+          .then(() => show.target(d))
+          .catch(() => null)
+      : null;
     if (target) return ring(d, target);
     const how = s.body.querySelector(".step-how");
     how.classList.remove("nudge");
