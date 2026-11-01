@@ -459,8 +459,8 @@
     if (!mock.test(html) || !html.includes("<head>")) throw new Error("app/index.html isn't the page tour.js expects");
     return html
       .replace("<head>", `<head>\n    <base href="${APP}" />`)
-      .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css", HERE)}" />\n  </head>`)
-      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js", HERE)}"></script>`);
+      .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css?v=2", HERE)}" />\n  </head>`)
+      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=2", HERE)}"></script>`);
   }
 
   async function load() {

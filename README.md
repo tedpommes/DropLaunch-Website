@@ -18,6 +18,9 @@ step and nothing loaded from other sites. Cloudflare Pages publishes this reposi
 
 - **After editing `site.css`, `site.js` or `generator.js`**, raise the `?v=` number where the pages
   load them (`?v=1` → `?v=2`): browsers keep files from `assets/` for a week.
+- **After editing the demo's `tour.js` or `tour.css`**, raise their `?v=` in `demo/index.html`; for
+  `frame.js` or `frame.css`, in `demo/tour.js`. Cloudflare tells browsers to keep scripts and styles
+  outside `assets/` for 4 hours (only HTML pages are checked every time).
 - **New screenshots**: save them as WebP at two widths next to the old ones in `assets/img/` and
   update the `srcset` in `index.html`. With ffmpeg:
 
