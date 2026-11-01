@@ -1,0 +1,695 @@
+/* The demo page (demo/index.html): DropLaunch's window beside the tour, in the site's colours
+   (assets/site.css). */
+
+.tour-main {
+  --pad: 20px;
+  --bar: 34px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 20px;
+  padding: var(--pad);
+}
+
+/* Big screens: the page is the window and the tour, and only the tour scrolls. */
+@media (min-width: 1100px) {
+  body.tour-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .tour-main {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* Not the home page's sections (site.css). */
+.tour-main section {
+  padding: 0;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------- the window */
+.stage {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.win {
+  position: relative;
+  flex: none;
+}
+
+.win-frame {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.win-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--bar);
+  padding: 0 12px;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.win-bar img {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.win-title {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.win-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.win-hint::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--faint);
+}
+
+.win-size {
+  margin-left: auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.win-body {
+  position: relative;
+  width: 640px;
+  height: 860px;
+}
+
+.win.smooth .win-body {
+  transition: width 0.25s ease, height 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .win.smooth .win-body {
+    transition: none;
+  }
+}
+
+.win-body iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--bg);
+}
+
+.win-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Edges and corners to resize it by. */
+.grip {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+
+.grip-e,
+.grip-w {
+  top: 12px;
+  bottom: 12px;
+  width: 14px;
+  cursor: ew-resize;
+}
+
+.grip-e {
+  right: -8px;
+}
+
+.grip-w {
+  left: -8px;
+}
+
+.grip-s {
+  left: 12px;
+  right: 12px;
+  bottom: -8px;
+  height: 14px;
+  cursor: ns-resize;
+}
+
+.grip-se,
+.grip-sw {
+  bottom: -10px;
+  width: 22px;
+  height: 22px;
+}
+
+.grip-se {
+  right: -10px;
+  cursor: nwse-resize;
+}
+
+.grip-sw {
+  left: -10px;
+  cursor: nesw-resize;
+}
+
+.grip-e::before,
+.grip-w::before,
+.grip-s::before {
+  content: "";
+  position: absolute;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.grip-e::before,
+.grip-w::before {
+  top: 0;
+  bottom: 0;
+  left: 6px;
+  width: 2px;
+}
+
+.grip-s::before {
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 2px;
+}
+
+.grip:hover::before {
+  opacity: 0.7;
+}
+
+/* A mark just outside the corner: it can be resized. */
+.grip-se::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--faint);
+  border-bottom: 2px solid var(--faint);
+  border-bottom-right-radius: 3px;
+}
+
+.grip-se:hover::after {
+  border-color: var(--accent);
+}
+
+/* While resizing, the app mustn't take the mouse. */
+body.resizing {
+  user-select: none;
+}
+
+body.resizing iframe {
+  pointer-events: none;
+}
+
+body[data-edge="e"],
+body[data-edge="w"] {
+  cursor: ew-resize;
+}
+
+body[data-edge="s"] {
+  cursor: ns-resize;
+}
+
+body[data-edge="se"] {
+  cursor: nwse-resize;
+}
+
+body[data-edge="sw"] {
+  cursor: nesw-resize;
+}
+
+/* ---------------------------------------------------------------- the tour */
+.tour {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: clamp(340px, 26vw, 420px);
+  min-height: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.tour:focus {
+  outline: none;
+}
+
+.tour-head {
+  flex: none;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tour-head .eyebrow {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.tour-head h1 {
+  font-size: 21px;
+}
+
+.tour-head p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tour-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tour-bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--inset);
+}
+
+.tour-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ok);
+  transition: width 0.4s ease;
+}
+
+.tour-list {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 12px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+.tour-sec h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 8px 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tour-sec h2 span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  letter-spacing: 0;
+}
+
+.tour-sec ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.step + .step {
+  margin-top: 2px;
+}
+
+.step.current {
+  background: var(--inset);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.step-head:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.step.current .step-head {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.step[data-state="done"] .step-title,
+.step[data-state="skipped"] .step-title {
+  color: var(--muted);
+}
+
+.step-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-note {
+  flex: none;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The circle: empty, turning while it runs, a tick when done. */
+.step-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  color: #10131c;
+}
+
+.step-mark .icon {
+  width: 13px;
+  height: 13px;
+  stroke-width: 3;
+  opacity: 0;
+}
+
+.step.current .step-mark {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.step[data-state="active"] .step-mark {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  box-shadow: none;
+  animation: tour-spin 0.9s linear infinite;
+}
+
+.step[data-state="done"] .step-mark {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+
+.step[data-state="skipped"] .step-mark {
+  border-color: var(--faint);
+  background: var(--faint);
+}
+
+.step[data-state="done"] .step-mark .icon,
+.step[data-state="skipped"] .step-mark .icon {
+  opacity: 1;
+}
+
+@keyframes tour-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .step.just .step-mark {
+    animation: tour-pop 0.5s ease;
+  }
+
+  .step-how.nudge {
+    animation: tour-nudge 0.7s ease;
+  }
+}
+
+@keyframes tour-pop {
+  40% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes tour-nudge {
+  0%,
+  100% {
+    background: transparent;
+  }
+  30% {
+    background: var(--accent-soft);
+  }
+}
+
+.step-body {
+  padding: 0 14px 14px 44px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.step-body > * + * {
+  margin-top: 10px;
+}
+
+.step-body code {
+  overflow-wrap: anywhere;
+}
+
+.step-pc,
+.step-how {
+  margin-left: -8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.step-pc > b:first-child,
+.step-how > b:first-child {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.step-pc code + code {
+  margin-left: 4px;
+}
+
+.step-how b {
+  color: var(--text-strong);
+}
+
+/* A running step: its own progress. */
+.step-live {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.step-live .tour-bar {
+  height: 4px;
+  margin-bottom: 6px;
+}
+
+.step-live .tour-bar i {
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.step-live.unknown .tour-bar i {
+  width: 30%;
+  animation: tour-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes tour-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+.step-show {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 13.5px;
+}
+
+.step-show .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.tour-end {
+  margin: 16px 0 4px;
+  padding: 16px;
+  border: 1px solid rgba(76, 195, 138, 0.3);
+  border-radius: 12px;
+  background: rgba(76, 195, 138, 0.08);
+}
+
+.tour-end h2 {
+  font-size: 17px;
+}
+
+.tour-end p {
+  margin: 6px 0 14px;
+  font-size: 14px;
+}
+
+.tour-foot {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.tour-foot .icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* On a small screen: the step to do next, above the window. */
+.tour-mini {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- smaller screens */
+/* The window is as wide as the page, with the tour under it. */
+@media (max-width: 1099px) {
+  .tour-main {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .stage {
+    display: block;
+  }
+
+  .win-body {
+    width: auto;
+    height: calc(100vh - 62px - var(--bar) - 110px);
+    height: calc(100dvh - 62px - var(--bar) - 110px);
+    min-height: 460px;
+    max-height: 950px;
+  }
+
+  .grip {
+    display: none;
+  }
+
+  .tour {
+    width: auto;
+  }
+
+  .tour-list {
+    overflow: visible;
+  }
+
+  .tour-mini {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text-strong);
+    font-size: 14px;
+  }
+
+  .tour-mini:hover {
+    color: var(--text-strong);
+    text-decoration: none;
+  }
+
+  .tour-mini-count {
+    flex: none;
+    color: var(--accent);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tour-mini-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tour-mini .icon {
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+  }
+}
+
+@media (max-width: 560px) {
+  .win-hint {
+    display: none;
+  }
+}

@@ -11,6 +11,10 @@
 /generator
   Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
+# The app on its own, without the tour: search engines should list /demo/ instead.
+/demo/app/*
+  X-Robots-Tag: noindex
+
 # Pictures, styles and scripts change rarely: a week in the browser's cache. After changing
 # site.css, site.js or generator.js, raise the ?v= number where the pages load them.
 /assets/*
