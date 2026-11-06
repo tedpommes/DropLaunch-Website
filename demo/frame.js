@@ -53,7 +53,7 @@
   let slower = 1;
   const setTimer = window.setTimeout;
   window.setTimeout = function (fn, ms, ...rest) {
-    if (slower > 1 && ms > 0 && /\/mock\.js:\d/.test(new Error().stack)) ms *= slower;
+    if (slower > 1 && ms > 0 && /\/mock\.js(\?[^:\s]*)?:\d/.test(new Error().stack)) ms *= slower;
     return setTimer.call(this, fn, ms, ...rest);
   };
 
@@ -119,6 +119,11 @@
   }
 
   for (const name of ["server", "playtest"]) api.event.listen(name, (e) => tour.event(name, e.payload));
+
+  // The tour explains each step already, so the app's own tips start off (ticking Show me around
+  // on the welcome screen still turns them on).
+  const guide = document.getElementById("welcome-guide");
+  if (guide) guide.checked = false;
 
   const win = api.window.getCurrentWindow();
   win.setSize = async (size) => tour.resize(size.width / devicePixelRatio, size.height / devicePixelRatio);

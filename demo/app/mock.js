@@ -582,6 +582,34 @@
     return buffer;
   }
 
+  /** The made-up Steam accounts' pictures (steam_accounts): a person on the account's own colours. */
+  const AVATAR_COLORS = {
+    "76561198000000001": ["#f39a52", "#c2471d"],
+    "76561198000000005": ["#5fb0ea", "#3348ad"],
+  };
+  async function steamAvatar(steamId) {
+    const colors = AVATAR_COLORS[steamId];
+    if (!colors) throw "mock: no Steam picture for this account";
+    const px = 184;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = px;
+    const g = canvas.getContext("2d");
+    const fill = g.createLinearGradient(0, 0, px, px);
+    fill.addColorStop(0, colors[0]);
+    fill.addColorStop(1, colors[1]);
+    g.fillStyle = fill;
+    g.fillRect(0, 0, px, px);
+    g.fillStyle = "rgba(255, 255, 255, 0.9)";
+    g.beginPath();
+    g.arc(px / 2, px * 0.39, px * 0.17, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.ellipse(px / 2, px, px * 0.33, px * 0.36, 0, Math.PI, 0);
+    g.fill();
+    const png = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    return png.arrayBuffer();
+  }
+
   const monumentsOf = (path) => {
     const size = sizeOf(path);
     return island(path, 128).spots.map((s) => ({ name: s.name, x: (s.u - 0.5) * size, z: (0.5 - s.v) * size }));
@@ -752,7 +780,7 @@
       case "get_state":
         return structuredClone(snap);
       case "language_state": {
-        const file = await (await fetch("lang/en.json")).json();
+        const file = await (await fetch("lang/en.json?v=801938ed9f")).json();
         const languages = [{ code: "en", name: "English", source: "builtIn", file: null }];
         return { code: "en", name: "English", strings: file.strings, languages, folder: "C:\\Users\\TP\\AppData\\Local\\DropLaunch\\Languages" };
       }
@@ -767,7 +795,7 @@
       case "theme_state": {
         mockThemes ??= await Promise.all(
           ["default", "light", "grey", "vibrant"].map(async (id) => {
-            const file = await (await fetch(`themes/${id}.json`)).json();
+            const file = await (await fetch(`themes/${id}.json?v=801938ed9f`)).json();
             return { id, name: file.theme.name, mode: file.theme.mode, source: "builtIn", file: null, colors: file.colors };
           }),
         );
@@ -901,7 +929,7 @@
       case "steam_accounts":
         return params.has("nosteam") ? [] : [{ steamId: "76561198000000001", name: demo ? "You" : "Map Maker", active: true }, { steamId: "76561198000000005", name: "Alt account", active: false }];
       case "steam_avatar":
-        throw "mock: no Steam pictures";
+        return steamAvatar(args.steamId);
       // Pictures of the maps (made-up islands, see mapPicture).
       case "map_picture":
         return mapPicture(args.path ?? null, 512);

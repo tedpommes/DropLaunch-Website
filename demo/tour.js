@@ -458,12 +458,12 @@
   let expected = false;
 
   function prepare(html) {
-    const mock = /<script src="mock\.js"[^>]*><\/script>/;
+    const mock = /<script src="mock\.js(\?v=[^"]*)?"[^>]*><\/script>/;
     if (!mock.test(html) || !html.includes("<head>")) throw new Error("app/index.html isn't the page tour.js expects");
     return html
       .replace("<head>", `<head>\n    <base href="${APP}" />`)
       .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css?v=3", HERE)}" />\n  </head>`)
-      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=4", HERE)}"></script>`);
+      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=5", HERE)}"></script>`);
   }
 
   async function load() {
@@ -471,7 +471,8 @@
     cover.textContent = "Loading DropLaunch…";
     try {
       if (!page) {
-        const reply = await fetch(APP);
+        // Always this build's page: its links name the build's files (see build_demo.py).
+        const reply = await fetch(APP, { cache: "no-cache" });
         if (!reply.ok) throw new Error(`HTTP ${reply.status}`);
         page = prepare(await reply.text());
       }
