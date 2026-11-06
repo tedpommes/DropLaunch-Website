@@ -244,7 +244,7 @@
           live(id, null, "Starting…");
         } else if (ev.state === "done") mark(id, "done");
         // The server starts once the setup window closes (frame.js).
-        else if (ev.state === "waiting") byId[id].note.textContent = "Press Continue";
+        else if (ev.state === "waiting") byId[id].note.textContent = ev.auto ? "Starts after the setup" : "Press Next, then Continue";
         else if (ev.state === "skipped") mark(id, "skipped", "Skipped");
         else mark(id, "todo");
         return;
@@ -324,7 +324,8 @@
       if (moved) await wait(300);
       return;
     }
-    // A finished setup has Continue; one that's running goes on in the background (Hide).
+    // A finished setup has Next or Continue, one that's running goes on in the background (Hide):
+    // either button's click closes it.
     if (open("setup")) {
       press(open("setup-close") ? "setup-close" : "setup-later");
       moved = true;
@@ -343,7 +344,7 @@
     server: { page: "setup", target: setupTasks },
     framework: { page: "setup", target: (d) => find(d, "#setup-framework") ?? setupTasks(d) },
     startfile: { page: "setup", target: setupTasks },
-    launch: { page: "setup", target: (d) => find(d, "#setup-close") ?? setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
+    launch: { page: "setup", target: (d) => find(d, "#setup-next") ?? find(d, "#setup-close") ?? setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
     ready: { page: "maps", target: (d) => find(d, "#server-panel") },
     join: { page: "maps", target: (d) => find(d, "#server-panel .btn-primary") },
     map: { page: "maps", target: (d) => customMap(d)?.querySelector(".row-play") ?? null },
@@ -462,7 +463,7 @@
     return html
       .replace("<head>", `<head>\n    <base href="${APP}" />`)
       .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css?v=3", HERE)}" />\n  </head>`)
-      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=3", HERE)}"></script>`);
+      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=4", HERE)}"></script>`);
   }
 
   async function load() {

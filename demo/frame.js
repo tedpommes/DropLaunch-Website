@@ -98,8 +98,9 @@
     const name = FRAMEWORKS[o.framework];
     const task = (state, detail = "") => deliver({ kind: "task", task: "framework", state, detail });
     if (ev.kind === "task" && ev.task === "launch") {
-      // The mock skips it (see setupAll): the tour waits for Continue.
-      if (o.startServer) tour.progress("setup_all", { ...ev, state: "waiting" });
+      // The mock skips it (see setupAll): the tour waits for Next and Continue, or for the
+      // countdown when Continue when done is ticked.
+      if (o.startServer) tour.progress("setup_all", { ...ev, state: "waiting", auto: document.getElementById("setup-auto")?.checked === true });
       else deliver(ev);
       return;
     }

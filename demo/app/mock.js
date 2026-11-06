@@ -40,13 +40,14 @@
   };
   const now = Math.floor(Date.now() / 1000);
   const snap = {
-    version: "2.0.0",
+    version: "2.0.3",
     platform: "windows",
     canHost: true,
     baseDir: base,
     // ?busy=desktop (or drive, downloads, documents, home): DropLaunch isn't in a folder of its own.
     busyPlace: params.get("busy") || null,
-    configFile: `${base}\\settings.json`,
+    configFile: `${base}\\DropLaunch-data\\settings.json`,
+    dataDir: `${base}\\DropLaunch-data`,
     configWarning: null,
     folders: [
       { key: "steamcmd", label: "SteamCMD", path: `${base}\\SteamCMD`, exists: !fresh },
@@ -72,7 +73,9 @@
     playtest: !fresh || demo,
     oxideInactive: oxide,
     startFile: fresh ? null : `${server}\\start_procgen_server.bat`,
+    procgen: { seed: "1184645116", size: "3000", file: null },
     updateScript: fresh ? null : `${server}\\update_server.bat`,
+    steamcmdUpdateScript: fresh ? null : `${base}\\SteamCMD\\update_rust_server.bat`,
     startFiles: fresh
       ? []
       : demo
@@ -98,7 +101,7 @@
     whitelist: false,
     whitelistIds: [],
     backupClientMaps: true,
-    mapBackupsDir: `${base}\\data\\ClientMapBackups`,
+    mapBackupsDir: `${base}\\DropLaunch-data\\ClientMapBackups`,
     busy: false,
     serverRunning: false,
     welcomed: !fresh,
@@ -323,6 +326,12 @@
   let mockKits = [{"id": "701d3973-7cf3-4060-9276-9920cfbf4118", "name": "Basic Build Kit", "wear": [], "belt": [{"item": "building.planner", "amount": 1, "slot": 0}, {"item": "hammer", "amount": 1, "slot": 1}, {"item": "lock.code", "amount": 99999, "slot": 2}], "main": [{"item": "wood", "amount": 99999, "slot": 0}, {"item": "stones", "amount": 99999, "slot": 1}, {"item": "metal.fragments", "amount": 99999, "slot": 2}, {"item": "metal.refined", "amount": 99999, "slot": 3}, {"item": "door.hinged.toptier", "amount": 9999, "slot": 4}, {"item": "door.hinged.metal", "amount": 99999, "slot": 5}, {"item": "wall.frame.garagedoor", "amount": 99999, "slot": 6}, {"item": "door.double.hinged.metal", "amount": 99999, "slot": 7}, {"item": "cupboard.tool", "amount": 999, "slot": 8}, {"item": "furnace", "amount": 9999, "slot": 9}]}, {"id": "raid", "name": "Raid kit", "wear": [{"item": "metal.facemask", "amount": 1, "slot": 0}, {"item": "metal.plate.torso", "amount": 1, "slot": 1}], "belt": [{"item": "rifle.ak", "amount": 1, "slot": 0}, {"item": "syringe.medical", "amount": 5, "slot": 1}], "main": [{"item": "explosive.timed", "amount": 8, "slot": 0}, {"item": "ammo.rifle", "amount": 256, "slot": 1}]}];
   let serverRun = 0;
   let nextId = 1;
+  /** Start files dropped on the window (Settings, Dropped assets) and the ones in use. */
+  let droppedStartFiles = [];
+  /** The themes (ui/themes, and ones dropped in the preview) and the one in use. */
+  let mockThemes = null;
+  let mockThemeId = "default";
+  const chosenStart = { procgen: null, maps: null };
 
   function pushLines(lines) {
     const out = lines.map(([text, kind]) => ({ text, kind, source: sourceOf(text, kind), time: Date.now() }));
@@ -381,13 +390,17 @@
 
   async function bootServer(target, prefab = false) {
     const run = ++serverRun;
-    const procgen = target.kind === "procgen";
+    // A start file of yours from the map list: the procedural map with its settings.
+    const preset = target.kind === "preset" ? target.name : null;
+    const procgen = target.kind === "procgen" || Boolean(preset);
     prefab = prefab && !procgen;
     const m = procgen ? null : [...maps, ...recent].find((x) => x.path === target.path);
-    const title = procgen ? "Procedural map" : m?.name ?? "map";
-    const key = title.replace(/[^A-Za-z0-9-]+/g, "_");
-    const startFile = procgen ? `${server}\\start_procgen_server.bat` : `${server}\\start_${key}${prefab ? "_prefab" : ""}.bat`;
-    shown = { procgen, path: procgen ? null : target.path, title };
+    const title = preset ? preset.replace(/\.[^.]+$/, "") : procgen ? "Procedural map" : m?.name ?? "map";
+    const key = preset ? `procgen_${title}` : title.replace(/[^A-Za-z0-9-]+/g, "_");
+    const startFile = preset ? `${server}\\start_${key}.bat` : procgen ? `${server}\\start_procgen_server.bat` : `${server}\\start_${key}${prefab ? "_prefab" : ""}.bat`;
+    const kept = preset && droppedStartFiles.find((f) => f.name === preset);
+    if (kept) kept.startFile = startFile;
+    shown = { procgen: procgen && !preset, path: procgen ? null : target.path, title };
     if (m) {
       m.startFile = `${server}\\start_${key}.bat`;
       m.prefabFile = `${server}\\start_${key}_prefab.bat`;
@@ -397,9 +410,10 @@
       title,
       map: procgen ? null : target.path,
       procgen,
+      preset,
       prefab,
       startFile,
-      logFile: `${server}\\logs\\droplaunch_${procgen ? "procgen" : key}${prefab ? "_prefab" : ""}.log`,
+      logFile: `${server}\\logs\\droplaunch_${procgen && !preset ? "procgen" : key}${prefab ? "_prefab" : ""}.log`,
       phase: "booting",
       boot: { stage: "starting", detail: "", percent: 2, framework: null, rconStarted: false, work: null, workSince: 0, issues: [] },
       startedAt: Date.now(),
@@ -750,6 +764,43 @@
         return null;
       case "export_language":
         return null;
+      case "theme_state": {
+        mockThemes ??= await Promise.all(
+          ["default", "light", "grey", "vibrant"].map(async (id) => {
+            const file = await (await fetch(`themes/${id}.json`)).json();
+            return { id, name: file.theme.name, mode: file.theme.mode, source: "builtIn", file: null, colors: file.colors };
+          }),
+        );
+        return { id: mockThemeId, themes: structuredClone(mockThemes), folder: `${base}\\DropLaunch-data\\Themes` };
+      }
+      case "set_theme":
+        mockThemeId = args.id;
+        return null;
+      case "add_themes": {
+        // A dropped file with "theme" in its name is a theme (Default's colours with a pink accent).
+        const added = [];
+        const rest = [];
+        for (const path of args.paths) {
+          const fileName = path.split(/[\\/]/).pop();
+          if (!/theme/i.test(fileName)) {
+            rest.push(path);
+            continue;
+          }
+          const name = fileName.replace(/(\.theme)?\.json$/i, "");
+          const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+          const theme = { id, name, mode: "dark", source: "added", file: `${base}\\DropLaunch-data\\Themes\\${id}.json`, colors: { ...mockThemes[0].colors, accent: "#e879b9", "accent-hover": "#ef94c7" } };
+          mockThemes = [...mockThemes.filter((t) => t.id !== id), theme];
+          added.push(theme);
+        }
+        return { added, rest, problems: [] };
+      }
+      case "remove_theme":
+        mockThemes = mockThemes.filter((t) => t.id !== args.id);
+        if (mockThemeId === args.id) mockThemeId = "default";
+        return null;
+      case "open_themes_folder":
+      case "save_theme":
+        return null;
       case "set_branch": {
         snap.branch = args.branch;
         const here = snap.installs.find((i) => i.branch === args.branch);
@@ -910,10 +961,54 @@
           zips: demo ? [{ path: "D:\\Downloads\\Canyon_Rally_pack.zip", name: "Canyon_Rally_pack", added: now - 86400, modified: now - 86400, size: 9811650, exists: true, made: [maps[0]?.path].filter(Boolean) }] : [],
           languages: [{ code: "en", name: "English", source: "builtIn", path: null, added: 0 }],
           startFiles: snap.startFiles.map((f) => ({ path: f.path, name: f.path.split("\\").pop(), map: f.map ? maps.find((m) => m.name === f.map)?.path ?? null : null, mapName: f.map ?? "Procedural map", prefab: f.prefab, modified: now - 3600, branch: snap.branch, own: true, settings: ["+server.port 28015", "+server.maxplayers 10", "+server.hostname \"DropLaunch test server\""] })),
-          kits: mockKits.map((k) => ({ id: k.id, builtIn: k.name === "Basic Build Kit", name: k.name, path: `${base}\\data\\Kits\\${k.name}.json`, items: k.wear.length + k.belt.length + k.main.length, modified: now - 7200 })),
-          kitsDir: `${base}\\data\\Kits`,
+          droppedStartFiles: structuredClone(droppedStartFiles),
+          chosenProcgen: chosenStart.procgen,
+          chosenMaps: chosenStart.maps,
+          startDefaults: { seed: 1184645116, size: 3000, players: 10, port: 28015 },
+          kits: mockKits.map((k) => ({ id: k.id, builtIn: k.name === "Basic Build Kit", name: k.name, path: `${base}\\DropLaunch-data\\Kits\\${k.name}.json`, items: k.wear.length + k.belt.length + k.main.length, modified: now - 7200 })),
+          kitsDir: `${base}\\DropLaunch-data\\Kits`,
         };
       case "assets_forget":
+        return null;
+      // A browser can't read a dropped file: its name says what it's for.
+      case "start_files_add": {
+        const added = [];
+        const problems = [];
+        for (const path of args.paths) {
+          const file = path.split("\\").pop();
+          if (!/\.(bat|cmd|sh)$/i.test(file) || /update/i.test(file)) {
+            problems.push(`${file}: not a Rust server start file (it doesn't start RustDedicated with server settings)`);
+            continue;
+          }
+          const usage = /map|custom|level/i.test(file) ? "maps" : "procgen";
+          const stem = file.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9-]+/g, "_").replace(/^_+|_+$/g, "") || "map";
+          const name = `${stem}.${file.split(".").pop().toLowerCase()}`;
+          // (What DropLaunch's own take: not a procedural map's level, seed and size.)
+          const settings =
+            usage === "procgen"
+              ? [["server.port", "28015"], ["server.maxplayers", "50"], ["server.hostname", "My server"]]
+              : [["server.port", "28015"], ["server.maxplayers", "50"], ["server.hostname", "My server"], ["decay.scale", "0"]];
+          droppedStartFiles = droppedStartFiles.filter((f) => f.name.toLowerCase() !== name.toLowerCase());
+          const seed = String(1000 + (hashOf(name) % 90000));
+          droppedStartFiles.unshift({ name, path: `${base}\\DropLaunch-data\\StartFiles\\${name}.txt`, usage, args: settings, seed, size: "4000", added: Math.floor(Date.now() / 1000) });
+          added.push({ name, usage, inUse: chosenStart[usage]?.toLowerCase() === name.toLowerCase() });
+        }
+        return { added, problems };
+      }
+      case "start_file_use": {
+        const f = args.name ? droppedStartFiles.find((x) => x.name === args.name && x.usage === args.usage) : null;
+        if (args.name && !f) throw `The start file ${args.name} is gone: drop it on DropLaunch again.`;
+        chosenStart[args.usage] = f?.name ?? null;
+        // The procedural map keeps its own seed and size.
+        if (args.usage === "procgen") snap.procgen = { seed: "1184645116", size: "3000", file: f?.name ?? null };
+        return null;
+      }
+      case "start_file_forget":
+        droppedStartFiles = droppedStartFiles.filter((f) => f.name !== args.name);
+        for (const usage of ["procgen", "maps"]) {
+          if (chosenStart[usage] === args.name) chosenStart[usage] = null;
+        }
+        if (!chosenStart.procgen) snap.procgen = { seed: "1184645116", size: "3000", file: null };
         return null;
       case "kits_built_in":
         return [mockKits[0].id];
@@ -986,6 +1081,7 @@
           backupClientMaps: opts.backupMaps !== false,
           startFile: `${server}\\start_procgen_server.bat`,
           updateScript: `${server}\\update_server.bat`,
+          steamcmdUpdateScript: `${base}\\SteamCMD\\update_rust_server.bat`,
           startFiles: [{ path: `${server}\\start_procgen_server.bat`, map: null, prefab: false }],
           branch: opts.branch,
         });
@@ -997,7 +1093,15 @@
       }
       case "list_maps":
         await wait(0.1);
-        return { mapsDir: `${base}\\Maps`, mapsDirExists: true, maps: structuredClone(maps), history: structuredClone(recent) };
+        return {
+          mapsDir: `${base}\\Maps`,
+          mapsDirExists: true,
+          maps: structuredClone(maps),
+          history: structuredClone(recent),
+          presets: droppedStartFiles
+            .filter((f) => f.usage === "procgen")
+            .map((f) => ({ name: f.name, title: f.name.replace(/\.[^.]+$/, ""), seed: f.seed, size: f.size, copy: f.path, startFile: f.startFile ?? null, added: f.added })),
+        };
       case "import_files": {
         const dropped = args.paths.filter((p) => /\.map$/i.test(p));
         for (const p of dropped) {
@@ -1005,7 +1109,7 @@
           const name = p.split("\\").pop().replace(/\.map$/i, "");
           recent.unshift({ path: p, name, folder: p.slice(0, p.lastIndexOf("\\")), size: 8811650 + (hashOf(p) % 4000000), modified: Math.floor(Date.now() / 1000), startFile: null, outside: true, started: Math.floor(Date.now() / 1000) });
         }
-        return { maps: dropped, problems: args.paths.filter((p) => !/\.(map|zip)$/i.test(p)).map((p) => `${p.split("\\").pop()}: not a .map or .zip file`) };
+        return { maps: dropped, problems: args.paths.filter((p) => !/\.(map|zip)$/i.test(p)).map((p) => `${p.split("\\").pop()}: not a supported file. Check Dropped assets in Settings to see what DropLaunch supports.`) };
       }
       case "take_pending_files":
         return [];
@@ -1027,7 +1131,7 @@
         return null;
       case "restart_server":
         if (!serverView) throw "No server is running.";
-        stopServer(false, serverView.procgen ? { kind: "procgen" } : { kind: "map", path: serverView.map }, serverView.prefab);
+        stopServer(false, serverView.preset ? { kind: "preset", name: serverView.preset } : serverView.procgen ? { kind: "procgen" } : { kind: "map", path: serverView.map }, serverView.prefab);
         return null;
       case "server_command":
         if (!serverView?.rcon) throw "The console isn't connected yet.";
@@ -1038,6 +1142,12 @@
         return { server: serverView && structuredClone(serverView), lines: structuredClone(consoleLines) };
       case "create_start_file": {
         const target = args.target;
+        if (target.kind === "preset") {
+          const kept = droppedStartFiles.find((f) => f.name === target.name);
+          if (!kept) throw `The start file ${target.name} is gone: drop it on DropLaunch again.`;
+          kept.startFile = `${server}\\start_procgen_${target.name.replace(/\.[^.]+$/, "")}.bat`;
+          return [kept.startFile];
+        }
         const m = target.kind === "map" ? maps.find((x) => x.path === target.path) : null;
         if (!m) return [`${server}\\start_procgen_server.bat`];
         m.startFile = `${server}\\start_${m.name}.bat`;
@@ -1047,9 +1157,12 @@
       // Kits ("Give items"): two kits, three players while a server is up.
       case "kits_load":
         return structuredClone(mockKits);
-      case "kits_save":
-        mockKits = structuredClone(args.kits).sort((a, b) => a.name.localeCompare(b.name));
+      case "kits_save": {
+        // New or changed kits and deleted ids; the others stay.
+        const gone = new Set([...(args.removed ?? []), ...args.kits.map((k) => k.id)]);
+        mockKits = [...mockKits.filter((k) => !gone.has(k.id)), ...structuredClone(args.kits)].sort((a, b) => a.name.localeCompare(b.name));
         return structuredClone(mockKits);
+      }
       case "kits_import":
         return { imported: [], rest: args.paths };
       case "kit_items":
