@@ -13,6 +13,8 @@
   const cover = $("win-cover");
   const panel = $("tour");
   const list = $("tour-list");
+  const stage = document.querySelector(".stage");
+  const folder = $("downloads");
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(v, hi)));
@@ -38,13 +40,16 @@
   let shown = null;
   const wide = matchMedia("(min-width: 1100px)");
 
-  /** How big the window can be next to the tour. */
+  /** How big the window can be next to the tour, and the Downloads folder beside or under it. */
   function room() {
     const cs = getComputedStyle(main);
+    const ss = getComputedStyle(stage);
     const chromeW = win.offsetWidth - body.offsetWidth;
     const chromeH = win.offsetHeight - body.offsetHeight;
-    const width = main.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.columnGap) - panel.offsetWidth - chromeW;
-    const height = main.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - chromeH;
+    const beside = folder && ss.display === "flex" && ss.flexDirection === "row" ? folder.offsetWidth + parseFloat(ss.columnGap) : 0;
+    const under = folder && ss.display === "flex" && ss.flexDirection === "column" ? folder.offsetHeight + parseFloat(ss.rowGap) : 0;
+    const width = main.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.columnGap) - panel.offsetWidth - chromeW - beside;
+    const height = main.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - chromeH - under;
     return { width: Math.min(BIGGEST.width, width), height: Math.min(BIGGEST.height, height) };
   }
 
@@ -99,7 +104,9 @@
     fit(START.width, START.height, true);
     if (shown) wanted = { ...shown };
   });
-  new ResizeObserver(() => fit(wanted.width, wanted.height)).observe(main);
+  const refit = new ResizeObserver(() => fit(wanted.width, wanted.height));
+  refit.observe(main);
+  if (folder) refit.observe(folder);
 
   // ---------------------------------------------------------------- the steps
   const steps = [...document.querySelectorAll(".step")].map((node) => ({
@@ -191,6 +198,9 @@
   let reports = 0;
 
   window.__demoTour = {
+    /** The files dragged from the Downloads folder right now (folder.js), for frame.js. */
+    dragging: null,
+
     command(cmd, args, phase, result) {
       if (phase === "start") {
         if (cmd === "setup_all") mark("setup", "done");
@@ -221,6 +231,18 @@
           break;
         case "create_start_file":
           if (ok && args.target?.kind === "map") mark("mapfiles", "done");
+          break;
+        // Files dropped on the window, other than a .map.
+        case "import_files":
+          if (ok && args.paths?.some((p) => /\.zip$/i.test(p)) && result?.maps?.length) mark("files", "done");
+          break;
+        case "start_files_add":
+        case "add_themes":
+        case "add_languages":
+          if (ok && result?.added?.length) mark("files", "done");
+          break;
+        case "kits_import":
+          if (ok && result?.imported?.length) mark("files", "done");
           break;
         case "server_command":
           // Not the profiler's own commands.
@@ -293,6 +315,8 @@
   const find = (d, selector) => visible(d.querySelector(selector));
   const setupTasks = (d) => find(d, "#setup-tasks") ?? find(d, "#strip");
   const customMap = (d) => [...d.querySelectorAll("#map-list .map-row")].find((row) => /\.map$/i.test(row.title) && visible(row));
+  /** A file in the Downloads folder (folder.js), by kind. */
+  const file = (kind) => visible($(`dl-${kind}`));
   /** More options (the console, server files, kits and bug reports): the window gets wider. */
   async function moreOptions(d) {
     if (!d.body.classList.contains("simple")) return;
@@ -347,7 +371,7 @@
     launch: { page: "setup", target: (d) => find(d, "#setup-next") ?? find(d, "#setup-close") ?? setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
     ready: { page: "maps", target: (d) => find(d, "#server-panel") },
     join: { page: "maps", target: (d) => find(d, "#server-panel .btn-primary") },
-    map: { page: "maps", target: (d) => customMap(d)?.querySelector(".row-play") ?? null },
+    map: { page: "maps", target: (d) => customMap(d)?.querySelector(".row-play") ?? file("map") },
     mapfiles: {
       page: "maps",
       async target(d) {
@@ -385,13 +409,15 @@
     },
     stop: { page: "maps", target: (d) => find(d, "#server-panel .btn-danger") },
     update: { page: "files", target: (d) => find(d, "#btn-primary:not([disabled])") ?? find(d, "#btn-verify") },
+    files: { page: "setup", target: () => file("theme") },
   };
 
-  /** A ring around `target` in the window for a few seconds. */
+  /** A ring around `target` for a few seconds: in the window, or on this page (the folder). */
   let stopRing = null;
-  function ring(d, target) {
+  function ring(_, target) {
     stopRing?.();
     target.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const d = target.ownerDocument;
     const view = d.defaultView;
     const node = d.createElement("div");
     node.className = "tour-ring";
@@ -452,7 +478,7 @@
 
   // ---------------------------------------------------------------- the app
   // app/index.html as it is, plus a <base> so its files load from app/, and frame.js and
-  // frame.css (the app's demo.js and mock.js stay as they are).
+  // frame.css (the app's demo.js and mock.js stay as they are; mock.js is told it's the tour).
   let page = null;
   /** The window loads what load() gave it; any other load is the app reloading itself. */
   let expected = false;
@@ -463,7 +489,8 @@
     return html
       .replace("<head>", `<head>\n    <base href="${APP}" />`)
       .replace("</head>", `  <link rel="stylesheet" href="${new URL("frame.css?v=3", HERE)}" />\n  </head>`)
-      .replace(mock, (tag) => `${tag}\n    <script src="${new URL("frame.js?v=5", HERE)}"></script>`);
+      // data-demo="tour": the map list starts empty, the maps are in the Downloads folder.
+      .replace(mock, (tag) => `${tag.replace(" data-demo", ' data-demo="tour"')}\n    <script src="${new URL("frame.js?v=7", HERE)}"></script>`);
   }
 
   async function load() {

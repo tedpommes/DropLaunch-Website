@@ -18,7 +18,7 @@ export function initAbout(ctx) {
     if (!notices) {
       $("about-list").replaceChildren(el("div", { class: "about-empty", text: t("common.loading") }));
       try {
-        const reply = await fetch("licenses.json?v=801938ed9f");
+        const reply = await fetch("licenses.json?v=7be547c658");
         if (!reply.ok) throw new Error(`HTTP ${reply.status}`);
         notices = await reply.json();
       } catch (err) {

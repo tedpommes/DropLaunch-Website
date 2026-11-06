@@ -22,7 +22,7 @@ const LINKS = {
 
 /** { code, name, strings, languages, folder } from the backend; English from the file without it. */
 const state = await core.invoke("language_state").catch(async () => {
-  const file = await (await fetch("lang/en.json?v=801938ed9f")).json();
+  const file = await (await fetch("lang/en.json?v=7be547c658")).json();
   return { code: "en", name: "English", strings: file.strings, languages: [], folder: null };
 });
 const strings = state.strings;

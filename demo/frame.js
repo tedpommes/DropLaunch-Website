@@ -61,11 +61,40 @@
   /** The setup that runs: the window's options (as changed meanwhile) and the mock's copy. */
   let setup = null;
 
+  /**
+   * In the app the options close once the downloads are done (they're used from then on), which
+   * in the demo is only part of the way. Here they stay open to the end, to read them and try
+   * Detect my Steam IDs. Done, Continue when done goes and Cancel turns into Next, as in the app;
+   * Next shows how it went.
+   */
+  function keepOptionsOpen() {
+    const [options, tasks, log, result, start] = ["setup-options", "setup-tasks", "setup-log", "setup-result", "setup-start"].map((id) => document.getElementById(id));
+    // Nothing to download (the server's there already): straight to the steps, as in the app.
+    if (!options || options.hidden) return;
+    // The app stops passing on changed options once they'd be used: Run test map server still counts.
+    const follow = () => setup && (setup.options.startServer = start.checked);
+    const hold = () => {
+      if (!result.hidden) {
+        watch.disconnect();
+        start.removeEventListener("change", follow);
+        return;
+      }
+      if (options.hidden) options.hidden = false;
+      if (!log.hidden) log.hidden = true;
+      if (!tasks.classList.contains("compact")) tasks.classList.add("compact");
+    };
+    const watch = new MutationObserver(hold);
+    for (const node of [options, log, result]) watch.observe(node, { attributes: true, attributeFilter: ["hidden"] });
+    watch.observe(tasks, { attributes: true, attributeFilter: ["class"] });
+    start.addEventListener("change", follow);
+  }
+
   async function setupAll(args) {
     const options = { ...args.options };
     const mock = { ...options, startServer: false };
     setup = { options, mock, framework: false };
     slower = SETUP_SLOWER;
+    keepOptionsOpen();
     let summary;
     try {
       summary = await run("setup_all", { ...args, options: mock });
@@ -119,6 +148,41 @@
   }
 
   for (const name of ["server", "playtest"]) api.event.listen(name, (e) => tour.event(name, e.payload));
+
+  // ---------------------------------------------------------------- dragging files in
+  // A file dragged from the tour's Downloads folder (tour.dragging names it) reaches the app as on
+  // a PC: the window shows what a drop would do, and the drop adds it. Files from the visitor's own
+  // PC show that too; demo.js hands them over by name when they're dropped.
+  let depth = 0;
+  const fromPc = (e) => [...(e.dataTransfer?.types ?? [])].includes("Files");
+  const drag = (type, names) => window.__mockDrag?.(type, names);
+  document.addEventListener("dragenter", (e) => {
+    if (!tour.dragging && !fromPc(e)) return;
+    e.preventDefault();
+    if (depth++ === 0) drag("enter", tour.dragging);
+  });
+  document.addEventListener("dragover", (e) => {
+    if (!tour.dragging && !fromPc(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  document.addEventListener("dragleave", () => {
+    if (depth > 0 && --depth === 0) drag("leave", null);
+  });
+  document.addEventListener("drop", (e) => {
+    depth = 0;
+    const names = tour.dragging;
+    if (!names) return;
+    e.preventDefault();
+    e.stopPropagation();
+    drag("drop", names);
+  });
+  /** The drag ended or went back to the page: the drop overlay goes. */
+  window.__demoDragEnd = () => {
+    if (depth === 0) return;
+    depth = 0;
+    drag("leave", null);
+  };
 
   // The tour explains each step already, so the app's own tips start off (ticking Show me around
   // on the welcome screen still turns them on).

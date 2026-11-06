@@ -21,9 +21,10 @@
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="/assets/site.css?v=2" />
-    <link rel="stylesheet" href="/demo/tour.css?v=3" />
+    <link rel="stylesheet" href="/demo/tour.css?v=4" />
     <script src="/assets/site.js?v=1" defer></script>
-    <script src="/demo/tour.js?v=5" defer></script>
+    <script src="/demo/tour.js?v=7" defer></script>
+    <script src="/demo/folder.js?v=1" defer></script>
   </head>
   <body class="tour-page">
     <svg class="sprite" aria-hidden="true">
@@ -66,14 +67,15 @@
     <main class="tour-main" id="main">
       <!-- On a small screen: the step to do next, above the window. -->
       <a class="tour-mini" id="tour-mini" href="#tour">
-        <span class="tour-mini-count" id="tour-mini-count">0 of 15</span>
+        <span class="tour-mini-count" id="tour-mini-count">0 of 16</span>
         <span class="tour-mini-title" id="tour-mini-title">Start the setup</span>
         <svg class="icon"><use href="#i-chevron" /></svg>
       </a>
 
       <!-- DropLaunch's real interface (app/, built by the app's dev/build_demo.py) in a window the
-           size of the app's own. Its edges resize it, like on Windows. -->
-      <section class="stage" aria-label="DropLaunch, simulated">
+           size of the app's own. Its edges resize it, like on Windows. Beside it (under it on smaller
+           screens) a Downloads folder with files to drag onto it (demo/folder.js). -->
+      <section class="stage" aria-label="DropLaunch and a Downloads folder, simulated">
         <div class="win" id="win">
           <div class="win-frame">
             <div class="win-bar" id="win-bar" title="Drag the window's edges to resize it. Double-click here for its starting size.">
@@ -93,6 +95,20 @@
           <div class="grip grip-sw" data-edge="sw" aria-hidden="true"></div>
           <div class="grip grip-se" data-edge="se" aria-hidden="true"></div>
         </div>
+
+        <section class="downloads" id="downloads" aria-labelledby="dl-title">
+          <div class="dl-bar">
+            <svg class="dl-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M2.5 8a2 2 0 0 1 2-2h7.6l3 3h12.4a2 2 0 0 1 2 2v14.5a2 2 0 0 1-2 2h-23a2 2 0 0 1-2-2z" fill="#e2a52b" /><path d="M2.5 12.5h27v13a2 2 0 0 1-2 2h-23a2 2 0 0 1-2-2z" fill="#ffcb4c" /></svg>
+            <h2 class="dl-title" id="dl-title">Downloads</h2>
+          </div>
+          <div class="dl-address" aria-hidden="true"><span>This PC</span><span>Data (D:)</span><span>Downloads</span></div>
+          <ul class="dl-files" id="dl-files" role="listbox" aria-label="Files in Downloads" tabindex="0"></ul>
+          <div class="dl-details">
+            <p id="dl-about" aria-live="polite">Drag a file onto DropLaunch, like on your PC. Or pick one and press Drop on DropLaunch.</p>
+            <button class="btn small dl-drop" type="button" id="dl-drop" disabled>Drop on DropLaunch</button>
+          </div>
+          <div class="dl-status"><span id="dl-count"></span><span id="dl-info"></span></div>
+        </section>
       </section>
 
       <!-- The tour: each step ticks off when it happens in the window (demo/tour.js). -->
@@ -103,7 +119,7 @@
           <p>Everything DropLaunch does on a real PC, in order. Steps tick off as they happen in the window: downloads, the server and Rust are simulated.</p>
           <div class="tour-progress">
             <div class="tour-bar"><i id="tour-bar"></i></div>
-            <span id="tour-count" aria-live="polite">0 of 15 done</span>
+            <span id="tour-count" aria-live="polite">0 of 16 done</span>
           </div>
         </div>
 
@@ -186,8 +202,8 @@
               <li class="step" data-step="map">
                 <button class="step-head" type="button"><span class="step-mark"></span><span class="step-title">Start your own map</span><span class="step-note"></span></button>
                 <div class="step-body">
-                  <p>Maps in DropLaunch's Maps folder show in the list. Dropping a <code>.map</code> file on the window, or on DropLaunch.exe, starts it straight away. The running server is stopped first.</p>
-                  <p class="step-how"><b>Do it</b>Press play next to a map under <b>Active folder</b>. You can also drop any file ending in <code>.map</code> on the window.</p>
+                  <p>Maps in DropLaunch's Maps folder show in the list by themselves. A <code>.map</code> file dropped on the window, or on DropLaunch.exe, starts straight away (a running server stops first), right where it is: a re-export is picked up on the next start.</p>
+                  <p class="step-how"><b>Do it</b>Drag <b>Canyon_Rally_v18.map</b> from the Downloads folder onto the window.</p>
                 </div>
               </li>
               <li class="step" data-step="mapfiles">
@@ -237,6 +253,19 @@
                 <div class="step-body">
                   <p>When Rust updates, DropLaunch runs SteamCMD again, like <code>update_server.bat</code> does, and puts Carbon or Oxide back. The pill at the top says when a new build is out.</p>
                   <p class="step-how"><b>Do it</b>With the server stopped, open <b>Server files</b> (in More options) and click <b>Verify files</b>. When there's a new build, <b>Update</b> shows next to it.</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <section class="tour-sec">
+            <h2><span>5</span>Make it yours</h2>
+            <ol>
+              <li class="step" data-step="files">
+                <button class="step-head" type="button"><span class="step-mark"></span><span class="step-title">Drop other files</span><span class="step-note"></span></button>
+                <div class="step-body">
+                  <p>DropLaunch takes more than maps: a <code>.zip</code> with a map and its start file, start files from the generator, kits, themes and language files. Each goes where it belongs, and <b>Settings → Dropped assets</b> lists what you dropped.</p>
+                  <p class="step-how"><b>Do it</b>Drag another file from the Downloads folder onto the window, like <b>Sunrise theme.json</b> for new colours.</p>
                 </div>
               </li>
             </ol>

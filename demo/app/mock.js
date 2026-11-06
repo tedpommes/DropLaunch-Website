@@ -13,9 +13,12 @@
 //   ?norust   the Rust game isn't installed
 //   ?demo     the public demo (dev/build_demo.py): made-up names and folders, testers join a running
 //             server and send bug reports, links open in a new tab
+// In the website's tour (its <script> has data-demo="tour") the map list starts empty: the maps are
+// in the Downloads folder the tour shows next to the window (window.__mockDownloads), to drop.
 (() => {
   const params = new URLSearchParams(location.search);
   const demo = params.has("demo") || Boolean(document.currentScript?.hasAttribute("data-demo"));
+  const tour = document.currentScript?.dataset.demo === "tour";
   const SPEED = demo ? 4 : 3; // replay faster than real time
   const base = demo ? "C:\\Users\\You\\Desktop\\DropLaunch" : "C:\\Users\\TP\\Desktop\\Droplaaauc";
   const server = `${base}\\Server_Files`;
@@ -107,7 +110,7 @@
     welcomed: !fresh,
     guide: { on: false, seen: [], done: [] },
   };
-  const maps = params.has("empty")
+  const maps = params.has("empty") || tour
     ? []
     : demo
     ? [
@@ -122,7 +125,7 @@
         { path: `${base}\\Maps\\Training\\A42TrainingV4.8.3.map`, name: "A42TrainingV4.8.3", folder: "Training", size: 15291428, modified: now - 86400 * 9, startFile: null, outside: false },
         { path: `${base}\\Maps\\Training\\Old\\A42TrainingV4.7.map`, name: "A42TrainingV4.7", folder: "Training\\Old", size: 15102411, modified: now - 86400 * 40, startFile: null, outside: false },
       ];
-  const recent = params.has("empty")
+  const recent = params.has("empty") || tour
     ? []
     : demo
     ? [{ path: "D:\\RustEdit\\Exports\\Frost_Valley_test.map", name: "Frost_Valley_test", folder: "D:\\RustEdit\\Exports", size: 7228587, modified: now - 7200, startFile: null, outside: true, started: now - 5400 }]
@@ -151,12 +154,30 @@
       },
     }),
   };
-  /** Files dropped on the window (names only: a browser doesn't tell where they are). */
+  /**
+   * The demo's Downloads folder: one of each kind of file DropLaunch takes. A browser can't read a
+   * dropped file, so these (and files dropped from the visitor's own PC) go by their names.
+   */
+  const DOWNLOADS = "D:\\Downloads";
+  const downloads = [
+    { name: "Canyon_Rally_v18.map", type: "MAP File", size: 9211650, kind: "map" },
+    { name: "Harbor_Island_v3.zip", type: "Compressed (zipped) Folder", size: 6120448, kind: "zip" },
+    { name: "start_server.bat", type: "Windows Batch File", size: 1184, kind: "startfile" },
+    { name: "Builder kit.json", type: "JSON File", size: 2311, kind: "kit" },
+    { name: "Sunrise theme.json", type: "JSON File", size: 1460, kind: "theme" },
+    { name: "Nederlands.json", type: "JSON File", size: 61872, kind: "language" },
+  ].map((f) => ({ ...f, path: `${DOWNLOADS}\\${f.name}` }));
+  window.__mockDownloads = structuredClone(downloads);
+  /** A drag over the window (enter, over, leave or drop) with these files: names are in Downloads. */
+  window.__mockDrag = (type, names) => {
+    const paths = names ? names.map((n) => (/[\\/]/.test(n) ? n : `${DOWNLOADS}\\${n}`)) : null;
+    listeners.__drag?.[0]({ payload: { type, paths, position: { x: 0, y: 0 } } });
+  };
+  /** Files dropped on the window, as if dragged in. */
   window.__mockDrop = async (names) => {
-    const paths = names.map((n) => `D:\\Downloads\\${n}`);
-    listeners.__drag?.[0]({ payload: { type: "enter", paths } });
+    window.__mockDrag("enter", names);
     await new Promise((r) => setTimeout(r, 700));
-    listeners.__drag?.[0]({ payload: { type: "drop", paths } });
+    window.__mockDrag("drop", names);
   };
   /** What a click does on a real PC, where the demo can't (the demo shows it as a note). */
   const onPc = (text) => demo && window.__demoNote?.(text);
@@ -331,6 +352,16 @@
   /** The themes (ui/themes, and ones dropped in the preview) and the one in use. */
   let mockThemes = null;
   let mockThemeId = "default";
+  const builtInThemes = async () =>
+    (mockThemes ??= await Promise.all(
+      ["default", "light", "grey", "vibrant"].map(async (id) => {
+        const file = await (await fetch(`themes/${id}.json?v=7be547c658`)).json();
+        return { id, name: file.theme.name, mode: file.theme.mode, source: "builtIn", file: null, colors: file.colors };
+      }),
+    ));
+  /** Language files and .zip files dropped on the window. */
+  let addedLanguages = [];
+  let droppedZips = [];
   const chosenStart = { procgen: null, maps: null };
 
   function pushLines(lines) {
@@ -582,6 +613,38 @@
     return buffer;
   }
 
+  // ------------------------------------------------------------ item pictures
+  // The app downloads each picture once from wiki.rustclash.com and keeps it (src-tauri kits.rs);
+  // here the browser shows it from there. That site names Access-Control-Allow-Origin twice, which
+  // fetch() refuses, so the bytes can't be read: item_icon hands kits.js a stand-in instead, and
+  // the blob: URL kits.js makes of it is the picture's web address (an <img> needs no CORS).
+  const ITEM_PICTURES = "https://wiki.rustclash.com/img/items180/";
+  const WEB = Symbol("web address");
+  const webBlobs = new WeakMap();
+  window.Blob = new Proxy(window.Blob, {
+    construct(target, args, newTarget) {
+      const blob = Reflect.construct(target, args, newTarget);
+      const src = args[0]?.[0]?.[WEB];
+      if (src) webBlobs.set(blob, src);
+      return blob;
+    },
+  });
+  const objectUrl = URL.createObjectURL;
+  URL.createObjectURL = (object) => webBlobs.get(object) ?? objectUrl.call(URL, object);
+  async function itemIcon(item) {
+    const src = `${ITEM_PICTURES}${encodeURIComponent(item)}.png`;
+    // Not there (or offline): its initials, as in the app.
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = () => reject(`mock: no picture for ${item}`);
+      img.src = src;
+    });
+    const stand = new ArrayBuffer(0);
+    stand[WEB] = src;
+    return stand;
+  }
+
   /** The made-up Steam accounts' pictures (steam_accounts): a person on the account's own colours. */
   const AVATAR_COLORS = {
     "76561198000000001": ["#f39a52", "#c2471d"],
@@ -780,32 +843,47 @@
       case "get_state":
         return structuredClone(snap);
       case "language_state": {
-        const file = await (await fetch("lang/en.json?v=801938ed9f")).json();
-        const languages = [{ code: "en", name: "English", source: "builtIn", file: null }];
-        return { code: "en", name: "English", strings: file.strings, languages, folder: "C:\\Users\\TP\\AppData\\Local\\DropLaunch\\Languages" };
+        const file = await (await fetch("lang/en.json?v=7be547c658")).json();
+        const languages = [{ code: "en", name: "English", source: "builtIn", file: null }, ...structuredClone(addedLanguages)];
+        return { code: "en", name: "English", strings: file.strings, languages, folder: `${base}\\DropLaunch-data\\Languages` };
       }
-      case "set_language":
-        return null;
-      case "add_languages":
-        return { added: [], problems: ["mock: no language files in the preview"] };
+      case "set_language": {
+        // On a PC the window reloads in that language; the demo would start over, so it only says so.
+        if (!demo) return null;
+        const name = addedLanguages.find((l) => l.code === args.code)?.name ?? args.code;
+        onPc(`DropLaunch switches to ${name} now: its window reloads with the new texts. The demo stays in English.`);
+        return new Promise(() => {});
+      }
+      case "add_languages": {
+        // Nederlands.json (or nl.json) is a language file: Dutch, with English for what it leaves out.
+        const added = [];
+        const problems = [];
+        for (const path of args.paths) {
+          const file = path.split(/[\\/]/).pop();
+          if (!/^(nl|nederlands|dutch)\.json$/i.test(file)) {
+            problems.push(`${file}: not a DropLaunch theme, language or kit file`);
+            continue;
+          }
+          const language = { code: "nl", name: "Nederlands", source: "added", file: `${base}\\DropLaunch-data\\Languages\\nl.json`, added: Math.floor(Date.now() / 1000) };
+          addedLanguages = [...addedLanguages.filter((l) => l.code !== language.code), language];
+          added.push(language);
+        }
+        return { added, problems };
+      }
       case "open_languages_folder":
         return null;
       case "export_language":
         return null;
-      case "theme_state": {
-        mockThemes ??= await Promise.all(
-          ["default", "light", "grey", "vibrant"].map(async (id) => {
-            const file = await (await fetch(`themes/${id}.json?v=801938ed9f`)).json();
-            return { id, name: file.theme.name, mode: file.theme.mode, source: "builtIn", file: null, colors: file.colors };
-          }),
-        );
+      case "theme_state":
+        await builtInThemes();
         return { id: mockThemeId, themes: structuredClone(mockThemes), folder: `${base}\\DropLaunch-data\\Themes` };
-      }
       case "set_theme":
         mockThemeId = args.id;
         return null;
       case "add_themes": {
-        // A dropped file with "theme" in its name is a theme (Default's colours with a pink accent).
+        // A dropped file with "theme" in its name is a theme: Sunrise is Light's colours with an
+        // orange accent (the website's example), any other Default's with a pink one.
+        await builtInThemes();
         const added = [];
         const rest = [];
         for (const path of args.paths) {
@@ -814,9 +892,12 @@
             rest.push(path);
             continue;
           }
-          const name = fileName.replace(/(\.theme)?\.json$/i, "");
+          const name = fileName.replace(/(\.theme)?\.json$/i, "").replace(/[ ._-]*theme$/i, "") || "Theme";
           const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-          const theme = { id, name, mode: "dark", source: "added", file: `${base}\\DropLaunch-data\\Themes\\${id}.json`, colors: { ...mockThemes[0].colors, accent: "#e879b9", "accent-hover": "#ef94c7" } };
+          const file = `${base}\\DropLaunch-data\\Themes\\${id}.json`;
+          const theme = /^sunrise$/i.test(name)
+            ? { id, name, mode: "light", source: "added", file, colors: { ...mockThemes.find((t) => t.id === "light").colors, accent: "#d9480f", "accent-hover": "#c13f0b" } }
+            : { id, name, mode: "dark", source: "added", file, colors: { ...mockThemes[0].colors, accent: "#e879b9", "accent-hover": "#ef94c7" } };
           mockThemes = [...mockThemes.filter((t) => t.id !== id), theme];
           added.push(theme);
         }
@@ -986,8 +1067,8 @@
       case "assets_list":
         return {
           maps: recent.map((m) => ({ path: m.path, name: m.name, added: m.started ?? now, modified: m.modified, size: m.size, exists: true, made: [] })),
-          zips: demo ? [{ path: "D:\\Downloads\\Canyon_Rally_pack.zip", name: "Canyon_Rally_pack", added: now - 86400, modified: now - 86400, size: 9811650, exists: true, made: [maps[0]?.path].filter(Boolean) }] : [],
-          languages: [{ code: "en", name: "English", source: "builtIn", path: null, added: 0 }],
+          zips: [...droppedZips, ...(demo && !tour ? [{ path: "D:\\Downloads\\Canyon_Rally_pack.zip", name: "Canyon_Rally_pack", added: now - 86400, modified: now - 86400, size: 9811650, exists: true, made: [maps[0]?.path].filter(Boolean) }] : [])],
+          languages: [{ code: "en", name: "English", source: "builtIn", path: null, added: 0 }, ...addedLanguages.map((l) => ({ code: l.code, name: l.name, source: l.source, path: l.file, added: l.added }))],
           startFiles: snap.startFiles.map((f) => ({ path: f.path, name: f.path.split("\\").pop(), map: f.map ? maps.find((m) => m.name === f.map)?.path ?? null : null, mapName: f.map ?? "Procedural map", prefab: f.prefab, modified: now - 3600, branch: snap.branch, own: true, settings: ["+server.port 28015", "+server.maxplayers 10", "+server.hostname \"DropLaunch test server\""] })),
           droppedStartFiles: structuredClone(droppedStartFiles),
           chosenProcgen: chosenStart.procgen,
@@ -1131,13 +1212,33 @@
             .map((f) => ({ name: f.name, title: f.name.replace(/\.[^.]+$/, ""), seed: f.seed, size: f.size, copy: f.path, startFile: f.startFile ?? null, added: f.added })),
         };
       case "import_files": {
-        const dropped = args.paths.filter((p) => /\.map$/i.test(p));
-        for (const p of dropped) {
-          if ([...maps, ...recent].some((m) => m.path === p)) continue;
-          const name = p.split("\\").pop().replace(/\.map$/i, "");
-          recent.unshift({ path: p, name, folder: p.slice(0, p.lastIndexOf("\\")), size: 8811650 + (hashOf(p) % 4000000), modified: Math.floor(Date.now() / 1000), startFile: null, outside: true, started: Math.floor(Date.now() / 1000) });
+        // A .map is used where it is (in the history once it starts); a .zip is unpacked into
+        // Maps\<its name>\, its map's start file next to the map (its settings go into the map's
+        // start files).
+        const out = { maps: [], files: [], startFiles: [], keptStartFiles: [], problems: [] };
+        const time = Math.floor(Date.now() / 1000);
+        for (const p of args.paths) {
+          const file = p.split(/[\\/]/).pop();
+          const known = downloads.find((f) => f.path === p);
+          if (/\.map$/i.test(file)) {
+            out.maps.push(p);
+            if (![...maps, ...recent].some((m) => m.path === p)) {
+              recent.unshift({ path: p, name: file.replace(/\.map$/i, ""), folder: p.slice(0, p.lastIndexOf("\\")), size: known?.size ?? 8811650 + (hashOf(p) % 4000000), modified: time, startFile: null, outside: true, started: time });
+            }
+          } else if (/\.zip$/i.test(file)) {
+            const stem = file.replace(/\.zip$/i, "");
+            const path = `${base}\\Maps\\${stem}\\${stem}.map`;
+            if (!maps.some((m) => m.path === path)) {
+              maps.unshift({ path, name: stem, folder: stem, size: 13985865 + (hashOf(path) % 2000000), modified: time, startFile: `${server}\\start_${stem}.bat`, prefabFile: `${server}\\start_${stem}_prefab.bat`, outside: false });
+            }
+            droppedZips = [{ path: p, name: stem, added: time, modified: time, size: known?.size ?? 6120448, exists: true, made: [path] }, ...droppedZips.filter((z) => z.path !== p)];
+            out.maps.push(path);
+            out.startFiles.push(`${base}\\Maps\\${stem}\\start_${stem}.bat`);
+          } else {
+            out.problems.push(`${file}: not a supported file. Check Dropped assets in Settings to see what DropLaunch supports.`);
+          }
         }
-        return { maps: dropped, problems: args.paths.filter((p) => !/\.(map|zip)$/i.test(p)).map((p) => `${p.split("\\").pop()}: not a supported file. Check Dropped assets in Settings to see what DropLaunch supports.`) };
+        return out;
       }
       case "take_pending_files":
         return [];
@@ -1176,7 +1277,7 @@
           kept.startFile = `${server}\\start_procgen_${target.name.replace(/\.[^.]+$/, "")}.bat`;
           return [kept.startFile];
         }
-        const m = target.kind === "map" ? maps.find((x) => x.path === target.path) : null;
+        const m = target.kind === "map" ? [...maps, ...recent].find((x) => x.path === target.path) : null;
         if (!m) return [`${server}\\start_procgen_server.bat`];
         m.startFile = `${server}\\start_${m.name}.bat`;
         m.prefabFile = `${server}\\start_${m.name}_prefab.bat`;
@@ -1191,12 +1292,35 @@
         mockKits = [...mockKits.filter((k) => !gone.has(k.id)), ...structuredClone(args.kits)].sort((a, b) => a.name.localeCompare(b.name));
         return structuredClone(mockKits);
       }
-      case "kits_import":
-        return { imported: [], rest: args.paths };
+      case "kits_import": {
+        // A .json with "kit" in its name is a kit: tools and building materials.
+        const imported = [];
+        const rest = [];
+        for (const path of args.paths) {
+          const file = path.split(/[\\/]/).pop();
+          if (!/kit/i.test(file) || !/\.json$/i.test(file)) {
+            rest.push(path);
+            continue;
+          }
+          const name = file.replace(/\.json$/i, "").replace(/^./, (c) => c.toUpperCase());
+          const id = `dropped-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+          const slots = (items) => items.map(([item, amount], slot) => ({ item, amount, slot }));
+          const kit = {
+            id,
+            name,
+            wear: slots([["hazmatsuit", 1]]),
+            belt: slots([["building.planner", 1], ["hammer", 1], ["pickaxe", 1], ["hatchet", 1], ["torch", 1]]),
+            main: slots([["wood", 20000], ["stones", 20000], ["metal.fragments", 10000], ["metal.refined", 500], ["cupboard.tool", 1], ["lock.code", 5], ["door.hinged.metal", 3]]),
+          };
+          mockKits = [...mockKits.filter((k) => k.id !== id), kit].sort((a, b) => a.name.localeCompare(b.name));
+          imported.push({ id, name });
+        }
+        return { imported, rest };
+      }
       case "kit_items":
         throw "mock: the built-in item list";
       case "item_icon":
-        throw "mock: no pictures";
+        return itemIcon(args.item);
       case "kit_players":
         if (!serverView?.rcon) throw "No server is running.";
         if (demo) return testers.map((p) => ({ id: p.id, name: p.name }));

@@ -165,7 +165,7 @@ export function initKits(ctx) {
     let list = await invoke("kit_items").catch(() => null);
     if (!list) {
       try {
-        list = await (await fetch("kits/items.json?v=801938ed9f")).json();
+        list = await (await fetch("kits/items.json?v=7be547c658")).json();
       } catch {
         list = [];
       }
