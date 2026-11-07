@@ -229,9 +229,6 @@
         case "restart_rust_and_join":
           if (ok) mark("join", "done");
           break;
-        case "create_start_file":
-          if (ok && args.target?.kind === "map") mark("mapfiles", "done");
-          break;
         // Files dropped on the window, other than a .map.
         case "import_files":
           if (ok && args.paths?.some((p) => /\.zip$/i.test(p)) && result?.maps?.length) mark("files", "done");
@@ -314,7 +311,6 @@
   const visible = (node) => (node && node.getClientRects().length && !node.closest("[hidden]") ? node : null);
   const find = (d, selector) => visible(d.querySelector(selector));
   const setupTasks = (d) => find(d, "#setup-tasks") ?? find(d, "#strip");
-  const customMap = (d) => [...d.querySelectorAll("#map-list .map-row")].find((row) => /\.map$/i.test(row.title) && visible(row));
   /** A file in the Downloads folder (folder.js), by kind. */
   const file = (kind) => visible($(`dl-${kind}`));
   /** More options (the console, server files, kits and bug reports): the window gets wider. */
@@ -371,19 +367,8 @@
     launch: { page: "setup", target: (d) => find(d, "#setup-next") ?? find(d, "#setup-close") ?? setupTasks(d) ?? find(d, "#map-list .map-row .row-play") },
     ready: { page: "maps", target: (d) => find(d, "#server-panel") },
     join: { page: "maps", target: (d) => find(d, "#server-panel .btn-primary") },
-    map: { page: "maps", target: (d) => customMap(d)?.querySelector(".row-play") ?? file("map") },
-    mapfiles: {
-      page: "maps",
-      async target(d) {
-        const row = customMap(d);
-        if (!row) return null;
-        row.scrollIntoView({ block: "nearest" });
-        const r = row.getBoundingClientRect();
-        row.dispatchEvent(new d.defaultView.MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
-        await wait(60);
-        return [...d.querySelectorAll(".ctx-menu [role=menuitem]")].find((b) => /start file/i.test(b.textContent)) ?? row;
-      },
-    },
+    // The step is about dragging it in, so the file in the folder, even once it's in the list.
+    map: { page: "maps", target: () => file("map") },
     bug: {
       page: "maps",
       async target(d) {
